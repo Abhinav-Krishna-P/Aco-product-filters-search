@@ -1,0 +1,35 @@
+node_modules
+.DS_Store
+
+/.cache
+/build
+/app/build
+/public/build/
+/public/_dev
+/app/public/build
+.agents
+.superpowers
+.vscode
+/docs
+.env
+.env.*
+!.env.example
+
+.claude
+
+
+
+/extensions/*/dist
+
+# Ignore shopify files created during app dev
+.shopify/*
+.shopify.lock
+
+# Local-only: editor/MCP config, per-developer app config, skill lock
+/.cursor/
+/shopify.app.local.toml
+/skills-lock.json
+
+# Deployment-specific config (kept out of the public repo)
+.gitlab-ci.yml
+shopify.app.*.toml
