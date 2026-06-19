@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Product filter settings (source of truth for the admin UI) ──
+// The admin loads/edits these rows; on save they are serialized into the
+// pf_config.settings shop metafield, which is what the storefront reads.
+
+model FilterSettings {
+  id              String    @id @default(cuid())
+  shop            String    @unique // one settings row per store
+  version         Int       @default(3)
+
+  // Catalog detection bookkeeping (mirrored into the metafield snapshot)
+  storefrontToken String?
+  scannedCount    Int       @default(0)
+  capped          Boolean   @default(false)
+  phKey           String?
+  phHost          String?
+
+  // Global config groups stored as JSON (shapes defined in filterSettings.server.ts)
+  layout          Json      @default("{}")
+  appearance      Json      @default("{}")
+  behavior        Json      @default("{}")
+  sort            Json      @default("{}")
+  productCard     Json      @default("{}")
+
+  // Last full catalog detect (manual button or webhook re-check)
+  catalogSyncedAt DateTime?
+
+  // Snapshot sync bookkeeping
+  metafieldSyncedAt DateTime?
+  snapshotStale     Boolean @default(false)
+
+  filters         FilterDefinition[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model FilterDefinition {
+  id            String         @id @default(cuid())
+  settings      FilterSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  settingsId    String
+
+  key           String // "available" | "price" | "type" | "vendor" | "tag" | "opt_<name>"
+  type          String // available | price | productType | productVendor | tag | variantOption
+  name          String? // variant option name when type = variantOption
+  label         String
+  enabled       Boolean @default(true)
+  order         Int     @default(0) // drag-and-drop position
+
+  displayStyle  String  @default("checkbox") // checkbox|radio|swatch|image|pill|dropdown|range
+  defaultOpen   Boolean? // null = inherit behavior.defaultOpen
+  collapseAfter Int?
+  sortValuesBy  String  @default("alpha") // manual | alpha | count
+  selectionMode String  @default("multi") // multi | single
+  searchable    Boolean @default(false)
+
+  // Per-style extras + price bounds (min/max, swatch shape override, ...)
+  styleOptions  Json    @default("{}")
+
+  values        FilterValue[]
+
+  @@unique([settingsId, key])
+  @@index([settingsId, order])
+}
+
+model FilterValue {
+  id       String           @id @default(cuid())
+  filter   FilterDefinition @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  filterId String
+
+  raw      String // catalog value used for querying — never edited
+  // Collection-tree filters: raw of the parent value in the same filter
+  // (null = root). Non-collection filters leave this null.
+  parentRaw String?
+  label    String? // renamed display value
+  color    String? // swatch color (hex or CSS gradient)
+  image    String? // image swatch URL
+  hidden   Boolean @default(false)
+  pinned   String? // top | bottom | null
+  order    Int     @default(0)
+  // Custom filters only: the hand-picked products this option matches, stored
+  // as bare numeric product ids (the "gid://shopify/Product/" prefix is dropped
+  // to keep the published metafield snapshot under Shopify's 128 KB json cap).
+  productIds String[] @default([])
+  // Custom filters only: when just some of a product's variants were picked,
+  // those variants as "productId:variantId" (bare numeric ids). A product in
+  // productIds with no entry here matches with all of its variants.
+  variantIds String[] @default([])
+  mergeOf  String[] @default([])
+  tooltip  String?
+  stale    Boolean @default(false) // value no longer found in catalog by detect
+
+  @@unique([filterId, raw])
+  @@index([filterId, order])
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+
+  @@index([shop])
+}
+
+// ── Merchant store install registry ──
+// Records store metadata on first app installation.
+// Stores are inserted only once on initial install; subsequent installs do not overwrite it.
+model Shop {
+  id            String    @id @default(cuid())
+  shopDomain    String    @unique // e.g. "store.myshopify.com"
+  name          String?   // Store display name
+  email         String?   // Store owner/contact email
+  currency      String?   // Currency code (USD, EUR, INR, etc.)
+  timezone      String?   // IANA timezone string
+  country       String?   // Country code
+  planName      String?   // Shopify subscription plan
+  primaryDomain String?   // Custom primary domain URL
+  installedAt   DateTime  @default(now())
+  onboardingCompletedAt DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@index([shopDomain])
+}
+
