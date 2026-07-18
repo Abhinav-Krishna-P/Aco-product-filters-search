@@ -1,0 +1,2630 @@
+/* Product Filter & Search — theme-agnostic, inherits theme fonts/colors. */
+
+.aco-pf-app {
+  --aco-pf-gap: 1.5rem;
+  --aco-pf-border: rgba(0, 0, 0, 0.12);
+  --aco-pf-muted: rgba(0, 0, 0, 0.55);
+  --aco-pf-accent: currentColor;
+  --aco-pf-sidebar-w: 260px;
+  --aco-pf-radius: 0.375rem;
+  --aco-pf-row-gap: 0.4rem;
+  --aco-pf-swatch-size: 1.1rem;
+  --aco-pf-swatch-radius: 999px;
+  width: 100%;
+  max-width: 120rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 5vw, 5rem);
+  box-sizing: border-box;
+  position: relative;
+  color: var(--aco-pf-text, inherit);
+  background: var(--aco-pf-bg, transparent);
+}
+
+/* Default spacing above the collection filter section. */
+.aco-pf-app[data-context="collection"] {
+  margin-top: 50px;
+  margin-bottom: 50px;
+}
+
+.aco-pf-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, var(--aco-pf-sidebar-w)) 1fr;
+  gap: var(--aco-pf-gap);
+  align-items: start;
+  min-width: 0;
+}
+
+/* ---- Layout structures ---- */
+.aco-pf-layout--sidebar-right {
+  grid-template-columns: 1fr minmax(200px, var(--aco-pf-sidebar-w));
+}
+
+.aco-pf-layout--sidebar-right .aco-pf-sidebar {
+  order: 2;
+}
+
+.aco-pf-layout--horizontal {
+  grid-template-columns: 1fr;
+}
+
+.aco-pf-layout--horizontal .aco-pf-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+/* Shared trigger geometry for every horizontal variant. The border treatment
+   itself lives in the .aco-pf-hbar--* blocks below so each variant owns it. */
+.aco-pf-layout--horizontal .aco-pf-group {
+  position: relative;
+  border: 0;
+  border-radius: var(--aco-pf-radius);
+  padding: 0;
+  min-width: 160px;
+}
+
+.aco-pf-layout--horizontal .aco-pf-group__summary {
+  padding: 0.5rem 0.75rem;
+}
+
+/* ---- Horizontal bar style: outlined (default) ----
+   Each trigger is its own bordered pill. Two classes on the layout element
+   outrank `.aco-pf-app--no-dividers .aco-pf-group { border-top: 0 }` further down —
+   that rule is a sidebar divider and used to strip the pills' top edge. */
+.aco-pf-layout--horizontal.aco-pf-hbar--outlined .aco-pf-group {
+  border: 1px solid var(--aco-pf-border);
+}
+
+/* ---- Horizontal bar style: borderless ----
+   No box around the triggers — label + chevron separated by spacing only. */
+.aco-pf-layout--horizontal.aco-pf-hbar--borderless .aco-pf-groups {
+  gap: 0.25rem 1.25rem;
+}
+
+.aco-pf-layout--horizontal.aco-pf-hbar--borderless .aco-pf-group__summary {
+  padding: 0.5rem 0;
+}
+
+/* ---- Horizontal bar style: boxed ----
+   One container wraps the whole row; triggers inside stay borderless. */
+.aco-pf-layout--horizontal.aco-pf-hbar--boxed .aco-pf-groups {
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  padding: 0.5rem 0.75rem;
+  gap: 0.25rem 1rem;
+  background: var(--aco-pf-bg, transparent);
+}
+
+.aco-pf-layout--horizontal .aco-pf-group[open] .aco-pf-group__body {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  min-width: 240px;
+  max-height: 320px;
+  overflow: auto;
+  background: var(--aco-pf-bg, #fff);
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.75rem;
+}
+
+/* The open dropdown's z-index only counts inside the bar's stacking context
+   (sticky creates one), so product cards painted later — positioned badges,
+   hover transforms — would cover it. Lift the whole bar above the results
+   while a dropdown is open; keep it unlifted otherwise so a sticky bar does
+   not sit over the theme's sticky header. Sticky/drawer rules below override
+   `position`. */
+.aco-pf-layout--horizontal .aco-pf-sidebar {
+  position: relative;
+}
+
+.aco-pf-app:not(.aco-pf-app--drawer-active)
+  .aco-pf-layout--horizontal
+  .aco-pf-sidebar:has(.aco-pf-group[open]) {
+  z-index: 10;
+}
+
+.aco-pf-app--sticky-sidebar .aco-pf-sidebar {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  /* Keep wheel/trackpad scroll; hide the visible scrollbar. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+
+.aco-pf-app--sticky-sidebar .aco-pf-sidebar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* "Sticky sidebar" applies to sidebar layouts only. A sticky horizontal bar
+   sits over the results while scrolling (and has no background, so the grid
+   shows through), and its overflow:auto would clip the dropdowns, which are
+   absolutely positioned below the bar. The drawer keeps its own scrolling. */
+.aco-pf-app--sticky-sidebar:not(.aco-pf-app--drawer-active)
+  .aco-pf-layout--horizontal
+  .aco-pf-sidebar {
+  position: relative;
+  top: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+/* Drawer structure (desktop drawer layout, and mobile drawer mode). */
+.aco-pf-app--drawer-active .aco-pf-drawer-toggle {
+  display: inline-flex;
+}
+
+.aco-pf-drawer-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.aco-pf-drawer-toggle__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  background: var(--aco-pf-accent, rgba(0, 0, 0, 0.85));
+  color: #fff;
+}
+
+.aco-pf-app--drawer-active .aco-pf-layout {
+  grid-template-columns: 1fr;
+}
+
+.aco-pf-app--drawer-active .aco-pf-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  width: min(86vw, 360px);
+  background: var(--aco-pf-bg, #fff);
+  padding: 1rem;
+  overflow: auto;
+  transform: translateX(-105%);
+  transition: transform 0.25s ease;
+  box-shadow: 0 0 32px rgba(0, 0, 0, 0.2);
+}
+
+.aco-pf-app--drawer-open .aco-pf-sidebar {
+  transform: translateX(0);
+}
+
+.aco-pf-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Drawer promoted to the browser top layer via the Popover API (modern
+   browsers). This renders above the theme's sticky header / isolated wrappers
+   regardless of stacking context — z-index alone can't escape those. The
+   fixed-drawer rules above remain the fallback for browsers without popover. */
+.aco-pf-sidebar[popover] {
+  position: fixed;
+  inset: 0 auto 0 0;
+  margin: 0;
+  width: min(86vw, 360px);
+  max-width: 100vw;
+  height: auto;
+  max-height: none;
+  border: 0;
+  padding: 1rem;
+  background: var(--aco-pf-bg, #fff);
+  color: inherit;
+  overflow: auto;
+  box-shadow: 0 0 32px rgba(0, 0, 0, 0.2);
+  transform: translateX(-105%);
+  transition:
+    transform 0.25s ease,
+    display 0.25s allow-discrete,
+    overlay 0.25s allow-discrete;
+}
+
+.aco-pf-sidebar[popover]:not(:popover-open) {
+  display: none;
+}
+
+.aco-pf-sidebar[popover]:popover-open {
+  transform: translateX(0);
+}
+
+@starting-style {
+  .aco-pf-sidebar[popover]:popover-open {
+    transform: translateX(-105%);
+  }
+}
+
+.aco-pf-sidebar[popover]::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.aco-pf-drawer-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.aco-pf-app--drawer-active .aco-pf-sidebar__head {
+  display: flex;
+  align-items: center;
+}
+
+/* ---- Drawer overrides the horizontal bar ----
+   In drawer mode the panel is a narrow column (max 360px), but the layout
+   element keeps its .aco-pf-layout--horizontal class. Without these resets the
+   bar's geometry survives into the drawer: 160px-min triggers flex-wrap two
+   to a row, and each open group renders as an absolutely-positioned popover
+   that overflows the panel. Inside the drawer, groups are always a single
+   stacked column with inline bodies — i.e. the sidebar treatment. */
+.aco-pf-app--drawer-active .aco-pf-layout--horizontal .aco-pf-groups {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+}
+
+.aco-pf-app--drawer-active .aco-pf-layout--horizontal .aco-pf-group {
+  position: static;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--aco-pf-border);
+  border-radius: 0;
+}
+
+.aco-pf-app--drawer-active .aco-pf-layout--horizontal .aco-pf-group__summary {
+  padding: 0.5rem 0;
+}
+
+/* Open group: back to an inline, in-flow body instead of a floating panel. */
+.aco-pf-app--drawer-active
+  .aco-pf-layout--horizontal
+  .aco-pf-group[open]
+  .aco-pf-group__body {
+  position: static;
+  min-width: 0;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  padding: 0 0 0.5rem;
+}
+
+/* Dividers off: match the sidebar, which drops the group rules entirely. */
+.aco-pf-app--drawer-active.aco-pf-app--no-dividers
+  .aco-pf-layout--horizontal
+  .aco-pf-group {
+  border-top: 0;
+}
+
+@media (max-width: 749px) {
+  .aco-pf-layout,
+  .aco-pf-layout--sidebar-right {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Sidebar ---- */
+.aco-pf-sidebar__title {
+  margin: 0 0 0.75rem;
+  font-size: var(--aco-pf-heading-size, 1.1rem);
+}
+
+.aco-pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ---- Sort dropdown ---- */
+/* Panel placement stacks label over select; toolbar placement sits inline in
+   the results header, between the count and the column switcher. */
+.aco-pf-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.aco-pf-sort--toolbar {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  margin-inline-start: auto;
+}
+
+.aco-pf-sort__label {
+  font-size: var(--aco-pf-label-size, 14px);
+  color: var(--aco-pf-muted);
+}
+
+/* Hidden label: still exposed to screen readers via the for/id association. */
+.aco-pf-sort__label--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.aco-pf-sort__select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--aco-pf-label-size, 14px);
+}
+
+.aco-pf-sort--toolbar .aco-pf-sort__select {
+  width: auto;
+  padding: 0.35rem 0.5rem;
+  font-size: var(--aco-pf-label-size, 14px);
+}
+
+/* Top right: inline in the results header, immediately left of the column
+   switcher (the head-end container already right-aligns its children). */
+.aco-pf-sort--top-right {
+  flex-direction: row;
+  align-items: center;
+  align-self: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.aco-pf-sort--top-right .aco-pf-sort__select {
+  width: auto;
+  padding: 0.35rem 0.5rem;
+  font-size: var(--aco-pf-label-size, 14px);
+}
+
+/* ---- Filter groups ---- */
+.aco-pf-group {
+  border-top: 1px solid var(--aco-pf-border);
+  padding: 0.5rem 0;
+}
+
+.aco-pf-group__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  /* Extra end padding so rotated chevron borders aren't clipped by
+     sticky-sidebar overflow:auto. */
+  padding: 0.35rem 0.35rem 0.35rem 0;
+  font-weight: 600;
+  font-size: var(--aco-pf-label-size, 14px);
+  line-height: 1.3;
+}
+
+/* Labels are capped in the admin, but values saved before that cap still exist
+   — and a single long unbroken word would otherwise push the toggle icon out
+   of the panel. Wrap anywhere rather than overflow; min-width:0 lets the flex
+   item actually shrink (flex items default to min-width:auto). */
+.aco-pf-group__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.aco-pf-group__summary::-webkit-details-marker {
+  display: none;
+}
+
+.aco-pf-group__active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+}
+
+/* Filter-group open/close icon. The root carries aco-pf-icon--chevron|plus|caret,
+   and aco-pf-icon-anim when the open/close animation is enabled. */
+.aco-pf-group__chevron {
+  margin-left: auto;
+  position: relative;
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  transform-origin: center center;
+}
+
+/* Enable the open/close animation only when aco-pf-icon-anim is present. */
+.aco-pf-icon-anim .aco-pf-group__chevron,
+.aco-pf-icon-anim .aco-pf-group__chevron::before,
+.aco-pf-icon-anim .aco-pf-group__chevron::after {
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+/* ---- Chevron (default): a rotating V drawn inside a padded box so sticky
+   overflow:auto does not clip the right edge of the rotated borders. ---- */
+.aco-pf-icon--chevron .aco-pf-group__chevron {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 0;
+}
+
+.aco-pf-icon--chevron .aco-pf-group__chevron::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  box-sizing: border-box;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-50%, -65%) rotate(45deg);
+  transform-origin: center center;
+}
+
+.aco-pf-icon--chevron .aco-pf-group[open] .aco-pf-group__chevron::before {
+  transform: translate(-50%, -35%) rotate(-135deg);
+}
+
+.aco-pf-icon--chevron .aco-pf-group[open] .aco-pf-group__chevron {
+  transform: none;
+}
+
+/* ---- Caret: a solid triangle that flips ---- */
+.aco-pf-icon--caret .aco-pf-group__chevron {
+  width: 0;
+  height: 0;
+  border-left: 0.35rem solid transparent;
+  border-right: 0.35rem solid transparent;
+  border-top: 0.4rem solid currentColor;
+}
+
+.aco-pf-icon--caret .aco-pf-group[open] .aco-pf-group__chevron {
+  transform: rotate(180deg);
+}
+
+/* ---- Plus / minus: the vertical bar rotates away to leave a minus ---- */
+.aco-pf-icon--plus .aco-pf-group__chevron::before,
+.aco-pf-icon--plus .aco-pf-group__chevron::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+
+.aco-pf-icon--plus .aco-pf-group__chevron::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.aco-pf-icon--plus .aco-pf-group__chevron::after {
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.aco-pf-icon--plus .aco-pf-group[open] .aco-pf-group__chevron::after {
+  transform: translateX(-50%) rotate(90deg);
+}
+
+.aco-pf-group__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aco-pf-row-gap, 0.4rem);
+  padding: 0.5rem 0 0.75rem;
+}
+
+/* Dividers off. Sidebar-only in effect: the horizontal variants set their own
+   border at a higher specificity, so this can't strip a pill's top edge. */
+.aco-pf-app--no-dividers .aco-pf-group {
+  border-top: 0;
+}
+
+/* Collapsing disabled (behavior.collapsible = false) */
+.aco-pf-app--no-collapse .aco-pf-group__summary {
+  pointer-events: none;
+}
+
+.aco-pf-app--no-collapse .aco-pf-group__chevron {
+  display: none;
+}
+
+/* Open/close animation */
+.aco-pf-app--anim-slide .aco-pf-group__body {
+  animation: aco-pf-slide-open 0.18s ease;
+}
+
+@keyframes aco-pf-slide-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Search-within-filter */
+.aco-pf-group__search {
+  width: 100%;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+/* Show more / show less */
+.aco-pf-group__more {
+  align-self: center;
+  margin: 0.5rem 0 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--aco-pf-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+}
+
+/* ---- Filter values ---- */
+.aco-pf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aco-pf-row-gap, 0.4rem);
+}
+
+.aco-pf-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: var(--aco-pf-label-size, 14px);
+  font-weight: var(--aco-pf-label-weight, inherit);
+  text-transform: var(--aco-pf-label-transform, none);
+  line-height: 1.3;
+  border-radius: var(--aco-pf-radius);
+}
+
+.aco-pf-value:hover {
+  background: var(--aco-pf-hover-bg, transparent);
+}
+
+/* Checkbox/radio sizing. We set no size here originally, so the control
+   inherited the theme's `input[type="checkbox"]` rules — many themes scale
+   those up to 1.5–2rem for touch targets, which dwarfs the value rows on
+   mobile. Pin it to a predictable size instead. The whole row is a <label>,
+   so the tap target stays row-sized regardless of the box.
+   Scoped through .aco-pf-app (0,2,0) so a theme's `.foo input[type=checkbox]`
+   (0,1,1) can't outrank it. */
+.aco-pf-app .aco-pf-value__input {
+  flex: 0 0 auto;
+  width: var(--aco-pf-check-size, 1rem);
+  height: var(--aco-pf-check-size, 1rem);
+  /* Themes often set min-width/min-height too — override both, or the box
+     stays large no matter what width/height say. */
+  min-width: var(--aco-pf-check-size, 1rem);
+  min-height: var(--aco-pf-check-size, 1rem);
+  max-width: var(--aco-pf-check-size, 1rem);
+  max-height: var(--aco-pf-check-size, 1rem);
+  padding: 0;
+  margin: 0;
+  accent-color: var(--aco-pf-accent, currentColor);
+}
+
+.aco-pf-value__input--hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.aco-pf-value__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.aco-pf-value__count {
+  color: var(--aco-pf-muted);
+  font-size: 12px;
+}
+
+.aco-pf-value--active .aco-pf-value__label {
+  font-weight: 600;
+}
+
+/* Outlined pills: selection is shown by the outline alone — keep text as-is. */
+.aco-pf-list--pill-outline .aco-pf-value--active .aco-pf-value__label {
+  font-weight: inherit;
+}
+
+.aco-pf-app--no-counts .aco-pf-value__count {
+  display: none !important;
+}
+
+.aco-pf-value--disabled {
+  opacity: 0.45;
+}
+
+.aco-pf-value__swatch {
+  width: var(--aco-pf-swatch-size, 1.1rem);
+  height: var(--aco-pf-swatch-size, 1.1rem);
+  border-radius: var(--aco-pf-swatch-radius, 999px);
+  border: 1px solid var(--aco-pf-border);
+  background-size: cover;
+  background-position: center;
+  flex: 0 0 auto;
+  position: relative;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+/* ---- Swatch hover effect (root carries aco-pf-hover--grow|lift|border|none) ----
+   grow/lift transform the whole value so the swatch AND its label move together. */
+.aco-pf-hover--grow .aco-pf-value--swatch:hover {
+  transform: scale(1.01);
+  transform-origin: left center;
+}
+
+.aco-pf-hover--lift .aco-pf-value--swatch:hover {
+  transform: translateY(-2px);
+}
+
+.aco-pf-hover--lift .aco-pf-value--swatch:hover .aco-pf-value__swatch {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.aco-pf-hover--border .aco-pf-value--swatch:hover .aco-pf-value__swatch {
+  border-color: var(--aco-pf-accent, currentColor);
+  box-shadow: 0 0 0 1px var(--aco-pf-accent, currentColor);
+}
+
+/* aco-pf-hover--none: no change on hover (transition still keeps selection states smooth). */
+
+/* Thumbnail shown inside the image-swatch pill tile. */
+.aco-pf-list--image .aco-pf-value__swatch {
+  --aco-pf-swatch-size: 1.6rem;
+  --aco-pf-swatch-radius: 999px;
+}
+
+.aco-pf-value__thumb img {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+}
+
+.aco-pf-list--swatch {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aco-pf-value--swatch {
+  position: relative;
+  transition: transform 0.15s ease;
+}
+
+/* Selected-swatch indicators (root carries aco-pf-swatch--ring|check|border) */
+.aco-pf-swatch--ring
+  .aco-pf-value--swatch:has(.aco-pf-value__input:checked)
+  .aco-pf-value__swatch,
+.aco-pf-swatch--ring
+  .aco-pf-value--swatch.aco-pf-value--active
+  .aco-pf-value__swatch {
+  outline: 2px solid var(--aco-pf-accent, currentColor);
+  outline-offset: 2px;
+}
+
+.aco-pf-swatch--border
+  .aco-pf-value--swatch:has(.aco-pf-value__input:checked)
+  .aco-pf-value__swatch,
+.aco-pf-swatch--border
+  .aco-pf-value--swatch.aco-pf-value--active
+  .aco-pf-value__swatch {
+  border: 2px solid var(--aco-pf-accent, currentColor);
+}
+
+.aco-pf-swatch--check
+  .aco-pf-value--swatch:has(.aco-pf-value__input:checked)
+  .aco-pf-value__swatch::after,
+.aco-pf-swatch--check
+  .aco-pf-value--swatch.aco-pf-value--active
+  .aco-pf-value__swatch::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--aco-pf-swatch-size, 1.1rem) * 0.6);
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Image swatches rendered as rectangular pill tiles: the thumbnail + label sit
+   inside a bordered button, matching the pill design. Selection is shown by the
+   tile border/fill — not a ring on the thumbnail. */
+.aco-pf-list--image {
+  gap: 0.4rem;
+}
+
+.aco-pf-list--image .aco-pf-value--swatch {
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  background: transparent;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.aco-pf-list--image .aco-pf-value--swatch:hover {
+  background: var(--aco-pf-hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+.aco-pf-list--image .aco-pf-value--swatch:has(.aco-pf-value__input:checked),
+.aco-pf-list--image .aco-pf-value--swatch.aco-pf-value--active {
+  background: var(--aco-pf-selected-bg, rgba(0, 0, 0, 0.06));
+}
+
+/* The tile indicates selection, so drop any ring/border the swatch indicator
+   would otherwise draw on the thumbnail, and keep the label normal weight. */
+.aco-pf-list--image
+  .aco-pf-value--swatch:has(.aco-pf-value__input:checked)
+  .aco-pf-value__swatch,
+.aco-pf-list--image
+  .aco-pf-value--swatch.aco-pf-value--active
+  .aco-pf-value__swatch {
+  outline: none;
+  border: 1px solid var(--aco-pf-border);
+}
+
+.aco-pf-list--image .aco-pf-value--active .aco-pf-value__label {
+  font-weight: inherit;
+}
+
+/* ---- Pills ---- */
+.aco-pf-list--pill {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.aco-pf-value--pill:hover {
+  background: transparent;
+}
+
+.aco-pf-value__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  background: transparent;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.aco-pf-value--pill:hover .aco-pf-value__pill {
+  background: var(--aco-pf-hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+/* Selected pill — filled with the per-filter color (falls back to the global
+   selected background, then dark). */
+.aco-pf-value--pill:has(.aco-pf-value__input:checked) .aco-pf-value__pill,
+.aco-pf-value--pill.aco-pf-value--active .aco-pf-value__pill {
+  background: var(
+    --aco-pf-pill-active,
+    var(--aco-pf-selected-bg, rgba(0, 0, 0, 0.85))
+  );
+  border-color: var(
+    --aco-pf-pill-active,
+    var(--aco-pf-accent, rgba(0, 0, 0, 0.85))
+  );
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Selected pill — Outlined variant: thin neutral outline only, no fill/color,
+   text weight unchanged. */
+.aco-pf-list--pill-outline
+  .aco-pf-value--pill:has(.aco-pf-value__input:checked)
+  .aco-pf-value__pill,
+.aco-pf-list--pill-outline
+  .aco-pf-value--pill.aco-pf-value--active
+  .aco-pf-value__pill {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  font-weight: inherit;
+}
+
+/* ---- Price ---- */
+.aco-pf-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aco-pf-price__field {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  flex: 1 1 0;
+}
+
+.aco-pf-price__currency {
+  color: var(--aco-pf-muted);
+  font-size: 0.85rem;
+}
+
+.aco-pf-price__input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0.15rem 0;
+  outline: none;
+}
+
+.aco-pf-group__reset {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  color: var(--aco-pf-muted);
+  text-decoration: underline;
+}
+
+/* ---- Active chips ---- */
+.aco-pf-active {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.aco-pf-active__label {
+  font-size: 0.8rem;
+  color: var(--aco-pf-muted);
+}
+
+.aco-pf-active__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.aco-pf-active__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-chip-radius, 999px);
+  font-size: 0.8rem;
+  text-decoration: none;
+  color: var(--aco-pf-chip-fg, inherit);
+  background: var(--aco-pf-chip-bg, transparent);
+}
+
+.aco-pf-active__x {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.aco-pf-active__clear {
+  font-size: 0.8rem;
+  color: red;
+}
+
+/* Compact button: the form is a flex column, so without align-self the button
+   stretches to the full width of the filter container. */
+.aco-pf-apply {
+  align-self: flex-start;
+  margin-top: 8px;
+  /* Colours, size and corners come from Settings → Behavior → Apply button.
+     Sizes are px because many themes shrink rem via html { font-size: 62.5% }. */
+  padding: var(--aco-pf-apply-pad, 8px 18px);
+  border: 1px solid var(--aco-pf-apply-bg, #111111);
+  border-radius: var(--aco-pf-apply-radius, 6px);
+  background: var(--aco-pf-apply-bg, #111111);
+  color: var(--aco-pf-apply-fg, #ffffff);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--aco-pf-apply-font-size, 14px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.aco-pf-apply:hover {
+  opacity: 0.88;
+}
+
+/* JS is present → the button auto-submit makes Apply optional; keep it for a11y. */
+
+/* ---- Results / grid ---- */
+.aco-pf-results:focus {
+  outline: none;
+}
+
+.aco-pf-results__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--aco-pf-muted);
+  font-size: 0.9rem;
+}
+
+.aco-pf-results__head-end {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Smart Filters — compact, half-width, left of the column switcher */
+.aco-pf-smart {
+  flex: 0 1 50%;
+  width: 50%;
+  max-width: 22rem;
+  min-width: 10rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.aco-pf-smart__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.aco-pf-smart__row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.aco-pf-smart__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius);
+  background: var(--aco-pf-bg, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: var(--aco-pf-label-size, 14px);
+}
+
+.aco-pf-smart__input:focus {
+  outline: 2px solid var(--aco-pf-accent, currentColor);
+  outline-offset: 1px;
+}
+
+.aco-pf-smart.is-loading .aco-pf-smart__input {
+  opacity: 0.65;
+}
+
+.aco-pf-smart__status {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--aco-pf-muted);
+  line-height: 1.3;
+}
+
+.aco-pf-smart__status.is-error {
+  color: #b42318;
+}
+
+.aco-pf-results__head-end .aco-pf-cols-switch {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+@media (max-width: 749px) {
+  .aco-pf-results__head-end {
+    flex-wrap: wrap;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .aco-pf-smart {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.aco-pf-cols-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.aco-pf-cols-btn {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.aco-pf-cols-btn[aria-pressed="true"] {
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  border-color: rgba(0, 0, 0, 0.85);
+}
+
+/* On small screens the column switcher isn't useful (grid is 2-up). */
+@media (max-width: 749px) {
+  .aco-pf-cols-switch {
+    display: none;
+  }
+  /* Shorter collapse-guard on phones: the desktop 400px reserves a lot of
+     empty space below a sparse (1–2 item) result on a narrow screen. */
+  .aco-pf-grid {
+    min-height: 240px;
+  }
+}
+
+.aco-pf-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--aco-pf-cols, 3), minmax(0, 1fr));
+  gap: var(--aco-pf-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Keep the results box from collapsing when no products match, so the
+     column switcher / pagination don't jump up to meet the header. */
+  min-height: 400px;
+  /* Pack rows to the top: with only 1–2 results the min-height above would
+     otherwise stretch the single row (and its cards) to fill 400px, leaving a
+     big gap before the pinned quick-buy button. Reserve that space below the
+     cards instead so each card keeps its natural height. */
+  align-content: start;
+}
+
+@media (max-width: 989px) {
+  .aco-pf-grid {
+    grid-template-columns: repeat(var(--aco-pf-cols-mobile, 2), minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .aco-pf-grid {
+    grid-template-columns: repeat(var(--aco-pf-cols-mobile, 2), minmax(0, 1fr));
+  }
+}
+
+/* Cards are flex columns so quick-buy buttons align along the bottom across a
+   row (grid rows stretch, so margin-top:auto on the actions pins them down). */
+.aco-pf-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--aco-pf-card-bg, transparent);
+  color: var(--aco-pf-card-fg, inherit);
+  border-radius: var(--aco-pf-card-radius, 0);
+  box-shadow: var(--aco-pf-card-shadow, none);
+}
+
+/* ── Structural layouts (classic | split) ── */
+
+.aco-pf-card__accent {
+  display: none;
+}
+
+.aco-pf-card__media {
+  position: relative;
+}
+
+.aco-pf-card__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.aco-pf-card__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.aco-pf-card__swatch.is-active {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 3px #111;
+}
+
+.aco-pf-card__swatch-more {
+  font-size: 0.7rem;
+  color: var(--aco-pf-muted, #6d7175);
+}
+
+.aco-pf-card__subtitle {
+  font-size: 0.75rem;
+  color: var(--aco-pf-muted, #6d7175);
+  line-height: 1.35;
+}
+
+.aco-pf-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.35rem 0 0;
+}
+
+.aco-pf-card__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.aco-pf-card__options-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aco-pf-muted, #6d7175);
+}
+
+.aco-pf-card__option-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+}
+
+.aco-pf-card__option-value {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.aco-pf-card__option-value.is-active {
+  color: #111;
+  font-weight: 650;
+}
+
+/* Split: full-height image left; info + CTAs stacked on the right */
+.aco-pf-grid--layout-split .aco-pf-card {
+  display: grid;
+  grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: stretch;
+  /* Border comes only from .aco-pf-grid--card ("Bordered card"). */
+  border-radius: var(--aco-pf-card-radius, 12px);
+  background: var(--aco-pf-card-bg, #fff);
+  box-shadow: var(--aco-pf-card-shadow, 0 2px 10px rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+  padding: 0;
+  min-height: 11.5rem;
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__link {
+  display: contents;
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__media,
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 100%;
+  max-width: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  align-self: stretch;
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__media .aco-pf-card__img,
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__img,
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__slide {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__slides {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__info {
+  grid-column: 2;
+  grid-row: 1;
+  flex: 1 1 auto;
+  padding: 0.75rem 0.85rem 0.35rem;
+  justify-content: center;
+  min-width: 0;
+  align-self: center;
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__actions {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 0.35rem 0.85rem 0.85rem;
+  margin-top: 0;
+}
+
+.aco-pf-grid--layout-split .aco-pf-card__btn {
+  width: 100%;
+}
+
+/* No quick-buy: info fills the right column */
+.aco-pf-grid--layout-split:not(.aco-pf-grid--has-actions) .aco-pf-card__info {
+  grid-row: 1 / -1;
+  padding-bottom: 0.85rem;
+}
+
+@media (max-width: 749px) {
+  .aco-pf-grid--layout-split {
+    --aco-pf-cols-mobile: 1;
+  }
+  .aco-pf-grid--layout-split .aco-pf-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    min-height: 0;
+  }
+  .aco-pf-grid--layout-split .aco-pf-card__media,
+  .aco-pf-grid--layout-split .aco-pf-card__media--gallery {
+    grid-column: 1;
+    grid-row: 1;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    min-height: 0;
+  }
+  .aco-pf-grid--layout-split .aco-pf-card__info {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .aco-pf-grid--layout-split .aco-pf-card__actions {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+.aco-pf-card__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.aco-pf-card__media {
+  aspect-ratio: var(--aco-pf-card-ratio, 1 / 1);
+  overflow: hidden;
+  border-radius: var(--aco-pf-card-media-radius, 0.5rem);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.aco-pf-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+  display: block;
+}
+
+/* Natural ratio: let the image set its own height instead of filling a box. */
+.aco-pf-grid--ratio-natural .aco-pf-card__img {
+  height: auto;
+}
+
+/* Hover zoom (opt-in via the Product card tab). */
+.aco-pf-grid--zoom .aco-pf-card__img {
+  transition: transform 0.45s ease;
+}
+.aco-pf-grid--zoom .aco-pf-card:hover .aco-pf-card__img {
+  transform: scale(1.06);
+}
+
+/* Bordered card treatment. */
+.aco-pf-grid--card .aco-pf-card {
+  border: 1px solid var(--aco-pf-card-border, var(--aco-pf-border, #e5e5e5));
+  border-radius: var(--aco-pf-card-radius, var(--aco-pf-radius, 8px));
+  padding: 0.55rem;
+  background: var(--aco-pf-card-bg, var(--aco-pf-bg, #fff));
+  transition: box-shadow 0.2s ease;
+}
+.aco-pf-grid--card .aco-pf-card:hover {
+  box-shadow: var(--aco-pf-card-shadow, 0 4px 16px rgba(0, 0, 0, 0.08));
+}
+
+/* Split layout must stay edge-flush even when "Bordered card" is on —
+   otherwise the shared card padding insets the image from top/left/bottom. */
+.aco-pf-grid--layout-split.aco-pf-grid--card .aco-pf-card,
+.aco-pf-grid--layout-split .aco-pf-card {
+  padding: 0;
+}
+.aco-pf-grid--layout-split .aco-pf-card__media,
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery {
+  aspect-ratio: auto;
+  border-radius: 0;
+  height: 100%;
+  min-height: 100%;
+  align-self: stretch;
+}
+.aco-pf-grid--layout-split .aco-pf-card__media .aco-pf-card__img,
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__img,
+.aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__slide,
+.aco-pf-grid--layout-split.aco-pf-grid--ratio-natural .aco-pf-card__img {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+}
+
+.aco-pf-card__info {
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+  text-align: left;
+}
+
+/* Centered text alignment. */
+.aco-pf-grid--center .aco-pf-card__info {
+  align-items: center;
+  text-align: center;
+}
+
+.aco-pf-card__vendor {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aco-pf-muted);
+}
+
+.aco-pf-card__title {
+  font-size: var(--aco-pf-card-title-size, 0.9rem);
+  font-weight: var(--aco-pf-card-title-weight, 400);
+}
+
+.aco-pf-card__price {
+  font-size: var(--aco-pf-card-price-size, 14px);
+  font-weight: 600;
+}
+
+.aco-pf-card__from {
+  font-weight: 400;
+  color: var(--aco-pf-muted);
+  font-size: 0.8rem;
+}
+
+.aco-pf-card__was {
+  color: var(--aco-pf-muted);
+  font-weight: 400;
+  margin-left: 0.35rem;
+}
+
+/* Discount badge shown next to the price on sale products. The base rule is
+   shared layout/typography; the paint (fill / border / none) comes from the
+   style modifier below. Colors are concrete rather than --aco-pf-accent: that
+   variable is often `currentColor`, which would resolve against the badge's
+   own white text and render an invisible white-on-white pill. Merchants can
+   recolor via --aco-pf-badge-bg / --aco-pf-badge-fg or the .aco-pf-card__badge custom CSS. */
+.aco-pf-card__badge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Solid: filled pill. */
+.aco-pf-card__badge--solid {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: var(--aco-pf-badge-bg, #111111);
+  color: var(--aco-pf-badge-fg, #ffffff);
+}
+
+/* Outline: bordered pill, transparent fill, colored text + border. Border via
+   inset box-shadow so it doesn't change the pill's size vs the solid style. */
+.aco-pf-card__badge--outline {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: transparent;
+  color: var(--aco-pf-badge-bg, #111111);
+  box-shadow: inset 0 0 0 1px var(--aco-pf-badge-bg, #111111);
+}
+
+/* Text only: no pill, just colored text next to the price. */
+.aco-pf-card__badge--text {
+  color: var(--aco-pf-badge-bg, #111111);
+}
+
+/* Sale badge: shown independently from the optional percentage discount
+   badge, so merchants can mark sale products even when prices are hidden. */
+.aco-pf-card__badge--sale {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: var(--aco-pf-sale-badge-bg, #d7263d);
+  color: var(--aco-pf-sale-badge-fg, #ffffff);
+}
+
+/* ---- Image slideshow / gallery ---- */
+.aco-pf-card__media--gallery {
+  position: relative;
+  aspect-ratio: var(--aco-pf-card-ratio, 1 / 1);
+}
+/* Natural ratio has no fixed box; a stacked gallery needs one, so square it. */
+.aco-pf-grid--ratio-natural .aco-pf-card__media--gallery {
+  aspect-ratio: 1 / 1;
+}
+.aco-pf-card__slides {
+  position: absolute;
+  inset: 0;
+}
+.aco-pf-card__media--gallery .aco-pf-card__slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.aco-pf-card__media--gallery .aco-pf-card__slide.is-active {
+  opacity: 1;
+}
+
+/* Prev / next arrows (arrows mode). */
+.aco-pf-card__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.aco-pf-card__nav--prev {
+  left: 0.4rem;
+}
+.aco-pf-card__nav--next {
+  right: 0.4rem;
+}
+/* Arrows appear on card hover by default; "arrows always" keeps them visible. */
+.aco-pf-grid--ss-arrows .aco-pf-card:hover .aco-pf-card__nav,
+.aco-pf-grid--ss-arrows-always .aco-pf-card__nav {
+  opacity: 1;
+}
+.aco-pf-card__nav:hover {
+  background: #fff;
+}
+
+/* Dot indicators. */
+.aco-pf-card__dots {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+  pointer-events: none;
+}
+.aco-pf-card__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.45);
+  transition: background 0.2s ease;
+}
+.aco-pf-card__dot.is-active {
+  background: #fff;
+}
+
+.aco-pf-card__soldout {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  font-size: 0.75rem;
+  background: var(--aco-pf-soldout-badge-bg, #6b6b6b);
+  color: var(--aco-pf-soldout-badge-fg, #ffffff);
+}
+
+/* ---- Sale / Out of stock badge overlaid on the image ---- */
+/* Positioned in the corner chosen in the admin (productCard.badgePosition). */
+.aco-pf-card__media {
+  position: relative;
+}
+.aco-pf-card__flag {
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  border-radius: 999px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.aco-pf-card__flag--small {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.625rem;
+}
+.aco-pf-card__flag--medium {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+}
+.aco-pf-card__flag--large {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+.aco-pf-card__flag--top-left {
+  top: 0.5rem;
+  left: 0.5rem;
+}
+.aco-pf-card__flag--top-right {
+  top: 0.5rem;
+  right: 0.5rem;
+}
+.aco-pf-card__flag--bottom-left {
+  bottom: 0.5rem;
+  left: 0.5rem;
+}
+.aco-pf-card__flag--bottom-right {
+  bottom: 0.5rem;
+  right: 0.5rem;
+}
+
+/* ---- Quick-buy buttons (Add to cart / Buy it now) ---- */
+.aco-pf-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  /* Pin buttons to the bottom so uneven titles don't misalign them. */
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+.aco-pf-card__btn {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  font-size: var(--aco-pf-btn-text-size, 14px);
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--aco-pf-btn-radius, 6px);
+  border: 1px solid var(--aco-pf-btn-bg, #111111);
+  background: var(--aco-pf-btn-bg, #111111);
+  color: var(--aco-pf-btn-fg, #ffffff);
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.aco-pf-card__btn:hover {
+  opacity: 0.88;
+}
+
+.aco-pf-card__btn:disabled,
+.aco-pf-card__btn--busy {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.aco-pf-card__btn--flash {
+  opacity: 1;
+}
+
+/* Outline style: transparent until hovered/active. */
+.aco-pf-grid--btn-outline .aco-pf-card__btn {
+  background: transparent;
+  color: var(--aco-pf-btn-bg, #111111);
+}
+.aco-pf-grid--btn-outline .aco-pf-card__btn:hover {
+  background: var(--aco-pf-btn-bg, #111111);
+  color: var(--aco-pf-btn-fg, #ffffff);
+  opacity: 1;
+}
+
+/* ---- Choose variant modal ---- */
+.aco-pf-variant-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: clamp(1rem, 4vw, 3rem);
+  border: 0;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.55);
+  color: inherit;
+}
+
+.aco-pf-variant-modal[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aco-pf-variant-modal::backdrop {
+  background: transparent;
+}
+
+.aco-pf-variant-modal__dialog {
+  position: relative;
+  width: 760px;
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 1 760px;
+  max-height: calc(100vh - clamp(2rem, 8vw, 6rem));
+  margin: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  border-radius: var(--aco-pf-radius, 0.5rem);
+  background: var(--aco-pf-bg, #fff);
+  color: var(--aco-pf-text, #111);
+  box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.3);
+}
+
+.aco-pf-variant-modal__close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 1;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.aco-pf-variant-modal__product {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(1rem, 3vw, 2rem);
+}
+
+.aco-pf-variant-modal__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--aco-pf-radius, 0.5rem);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.aco-pf-variant-modal__content {
+  min-width: 0;
+}
+
+.aco-pf-variant-modal__title {
+  margin: 0 2.5rem 1rem 0;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  overflow-wrap: anywhere;
+}
+
+.aco-pf-variant-modal__form,
+.aco-pf-variant-modal__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.aco-pf-variant-modal__form {
+  gap: 1rem;
+}
+
+.aco-pf-variant-modal__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.aco-pf-variant-modal__group legend {
+  margin-bottom: 0.45rem;
+  font-weight: 600;
+}
+
+.aco-pf-variant-modal__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aco-pf-variant-modal__option {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--aco-pf-border, rgba(0, 0, 0, 0.2));
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.aco-pf-variant-modal__option.is-selected {
+  border-color: var(--aco-pf-btn-bg, #111);
+  background: var(--aco-pf-btn-bg, #111);
+  color: var(--aco-pf-btn-fg, #fff);
+}
+
+.aco-pf-variant-modal__option.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.aco-pf-variant-modal__details p {
+  margin: 0.2rem 0;
+}
+
+.aco-pf-variant-modal__variant-title,
+.aco-pf-variant-modal__availability {
+  color: var(--aco-pf-muted, rgba(0, 0, 0, 0.6));
+}
+
+.aco-pf-variant-modal__price {
+  font-weight: 600;
+}
+
+.aco-pf-variant-modal__compare {
+  margin-left: 0.5rem;
+  color: var(--aco-pf-muted, rgba(0, 0, 0, 0.6));
+  font-weight: 400;
+}
+
+.aco-pf-variant-modal__quantity-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.aco-pf-variant-modal__quantity {
+  display: inline-grid;
+  grid-template-columns: 2.25rem 3.5rem 2.25rem;
+  border: 1px solid var(--aco-pf-border, rgba(0, 0, 0, 0.2));
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  overflow: hidden;
+}
+
+.aco-pf-variant-modal__quantity button,
+.aco-pf-variant-modal__quantity input {
+  min-width: 0;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+.aco-pf-variant-modal__quantity button {
+  cursor: pointer;
+}
+
+.aco-pf-variant-modal__quantity input {
+  border-right: 1px solid var(--aco-pf-border, rgba(0, 0, 0, 0.2));
+  border-left: 1px solid var(--aco-pf-border, rgba(0, 0, 0, 0.2));
+  appearance: textfield;
+}
+
+.aco-pf-variant-modal__quantity input::-webkit-inner-spin-button {
+  appearance: none;
+}
+
+.aco-pf-variant-modal__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.aco-pf-variant-modal__action,
+.aco-pf-variant-modal__state button {
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--aco-pf-btn-bg, #111);
+  border-radius: var(--aco-pf-btn-radius, 6px);
+  background: var(--aco-pf-btn-bg, #111);
+  color: var(--aco-pf-btn-fg, #fff);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--aco-pf-btn-text-size, 14px);
+  font-weight: 600;
+}
+
+.aco-pf-variant-modal__action--secondary {
+  background: transparent;
+  color: var(--aco-pf-btn-bg, #111);
+}
+
+.aco-pf-variant-modal__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.aco-pf-variant-modal--btn-outline .aco-pf-variant-modal__action {
+  background: transparent;
+  color: var(--aco-pf-btn-bg, #111);
+}
+
+.aco-pf-variant-modal--btn-outline .aco-pf-variant-modal__action:hover {
+  background: var(--aco-pf-btn-bg, #111111);
+  color: var(--aco-pf-btn-fg, #ffffff);
+}
+
+.aco-pf-variant-modal__error {
+  min-height: 1.25em;
+  margin: 0;
+  color: #b42318;
+}
+
+.aco-pf-variant-modal__state {
+  display: flex;
+  min-height: 10rem;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.aco-pf-variant-modal__state--loading {
+  color: var(--aco-pf-muted, rgba(0, 0, 0, 0.6));
+}
+
+@media (max-width: 749px) {
+  .aco-pf-variant-modal {
+    padding: 0;
+  }
+
+  .aco-pf-variant-modal__dialog {
+    width: 100%;
+    flex: 1 1 100%;
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .aco-pf-variant-modal__product {
+    grid-template-columns: 1fr;
+  }
+
+  .aco-pf-variant-modal__image {
+    width: min(55vw, 240px);
+    margin-inline: auto;
+  }
+
+  .aco-pf-variant-modal__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aco-pf-grid__empty {
+  grid-column: 1 / -1;
+  /* Fill the grid's min-height and center the message both ways. */
+  min-height: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--aco-pf-muted);
+}
+
+/* ---- Pagination ---- */
+.aco-pf-pagination {
+  margin-top: var(--aco-pf-gap);
+  display: flex;
+  justify-content: center;
+}
+
+.aco-pf-pagination .pagination,
+.aco-pf-pagination ul {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ---- Notices ---- */
+.aco-pf-notice {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.aco-pf-notice--muted {
+  color: var(--aco-pf-muted);
+}
+
+/* ---- Loading state ---- */
+.aco-pf-app--loading {
+  cursor: progress;
+}
+
+.aco-pf-app--loading [data-aco-pf-results] {
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+/* Skeletons are the loading UI — never dim them (class beats :has for Safari) */
+.aco-pf-app--loading.aco-pf-app--skeletons [data-aco-pf-results],
+.aco-pf-app--skeletons [data-aco-pf-results],
+.aco-pf-app--loading [data-aco-pf-results]:has(.aco-pf-grid--skeletons),
+.aco-pf-app--loading .aco-pf-grid--skeletons {
+  opacity: 1 !important;
+}
+
+.aco-pf-app--skeletons [data-aco-pf-results],
+.aco-pf-grid--skeletons {
+  pointer-events: none;
+}
+
+.aco-pf-card--skeleton {
+  list-style: none;
+  pointer-events: none;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.aco-pf-card--skeleton-classic {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.55rem;
+  border-radius: var(--aco-pf-card-radius, 8px);
+  background: var(--aco-pf-card-bg, #fff);
+  box-sizing: border-box;
+}
+
+.aco-pf-skeleton-media,
+.aco-pf-skeleton-line,
+.aco-pf-skeleton-accent {
+  background-color: #e4e4e4;
+  background-image: linear-gradient(
+    90deg,
+    #e4e4e4 0%,
+    #f0f0f0 40%,
+    #e4e4e4 80%
+  );
+  background-size: 200% 100%;
+  animation: aco-pf-skeleton-shimmer 1.1s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+.aco-pf-skeleton-media {
+  width: 100%;
+  aspect-ratio: var(--aco-pf-card-ratio, 1 / 1);
+  min-height: 160px;
+}
+
+.aco-pf-skeleton-line {
+  height: 0.75rem;
+  min-height: 12px;
+}
+
+.aco-pf-skeleton-line--title {
+  width: 72%;
+  margin-top: 0.15rem;
+}
+
+.aco-pf-skeleton-line--price {
+  width: 40%;
+}
+
+.aco-pf-skeleton-line--subtitle {
+  width: 55%;
+  height: 0.6rem;
+}
+
+.aco-pf-skeleton-line--swatch {
+  width: 4.5rem;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+
+.aco-pf-skeleton-line--btn {
+  width: 100%;
+  height: 2.25rem;
+  margin-top: 0.35rem;
+  border-radius: var(--aco-pf-btn-radius, 6px);
+}
+
+/* Split skeleton: full-height media left, details right */
+.aco-pf-card--skeleton-split {
+  display: grid;
+  grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 11.5rem;
+  padding: 0;
+  border-radius: var(--aco-pf-card-radius, 12px);
+  background: var(--aco-pf-card-bg, #fff);
+  box-sizing: border-box;
+}
+
+/* Placeholders match the real cards: bordered only with "Bordered card". */
+.aco-pf-grid--card .aco-pf-card--skeleton-classic,
+.aco-pf-grid--card .aco-pf-card--skeleton-split {
+  border: 1px solid var(--aco-pf-card-border, #e5e5e5);
+}
+
+.aco-pf-card--skeleton-split .aco-pf-skeleton-media {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  height: 100%;
+  min-height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  align-self: stretch;
+}
+
+.aco-pf-card--skeleton-split .aco-pf-skeleton-body {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  min-width: 0;
+}
+
+.aco-pf-card--skeleton-split .aco-pf-skeleton-line--btn {
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 749px) {
+  .aco-pf-grid--layout-split .aco-pf-card--skeleton-split {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .aco-pf-grid--layout-split
+    .aco-pf-card--skeleton-split
+    .aco-pf-skeleton-media {
+    grid-column: 1;
+    grid-row: 1;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    min-height: 160px;
+  }
+  .aco-pf-grid--layout-split
+    .aco-pf-card--skeleton-split
+    .aco-pf-skeleton-body {
+    grid-column: 1;
+  }
+}
+
+@keyframes aco-pf-skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* ---- Pagination ---- */
+.aco-pf-pager {
+  margin-top: var(--aco-pf-gap);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.aco-pf-pager__btn {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid currentColor;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+  line-height: 1.3;
+  min-height: 2.5rem;
+}
+
+.aco-pf-pager__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.aco-pf-pager__status {
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+  line-height: 1.3;
+  color: var(--aco-pf-muted);
+}
+
+.aco-pf-pager__pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.aco-pf-pager__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+  line-height: 1.3;
+}
+
+.aco-pf-pager__page:hover {
+  background: var(--aco-pf-hover-bg, rgba(0, 0, 0, 0.06));
+}
+
+[data-aco-pf-root] .aco-pf-pager__page[aria-current="page"] {
+  /*
+   * Keep the active page readable when --aco-pf-accent falls back to currentColor.
+   * The active label is white, so using currentColor for its background would
+   * resolve to white as well and hide the page number.
+   */
+  border-color: #1f2937 !important;
+  border-color: color-mix(
+    in srgb,
+    var(--aco-pf-accent, #1f2937) 80%,
+    #000
+  ) !important;
+  background: #1f2937 !important;
+  background: color-mix(
+    in srgb,
+    var(--aco-pf-accent, #1f2937) 80%,
+    #000
+  ) !important;
+  color: #fff !important;
+  cursor: default;
+}
+
+.aco-pf-pager__page[aria-current="page"]:hover {
+  background: #1f2937 !important;
+  background: color-mix(
+    in srgb,
+    var(--aco-pf-accent, #1f2937) 80%,
+    #000
+  ) !important;
+}
+
+.aco-pf-pager__ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 2.5rem;
+  color: var(--aco-pf-muted);
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+}
+
+.aco-pf-pager__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: inherit;
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+}
+
+.aco-pf-pager__jump-input {
+  width: 4.5rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+  text-align: center;
+}
+
+.aco-pf-pager__jump-submit {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--aco-pf-accent, currentColor);
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: var(--aco-pf-accent, currentColor);
+  color: var(--aco-pf-bg, #fff);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--aco-pf-pagination-text-size, 14px);
+  line-height: 1.3;
+}
+
+.aco-pf-pager__jump-input:focus-visible,
+.aco-pf-pager__jump-submit:focus-visible,
+.aco-pf-pager__page:focus-visible,
+.aco-pf-pager__btn:focus-visible {
+  outline: 2px solid var(--aco-pf-accent, currentColor);
+  outline-offset: 2px;
+}
+
+.aco-pf-pager__status--error {
+  color: var(--aco-pf-accent, currentColor);
+  font-weight: 600;
+}
+
+/* Basic: the original Previous / Page / Next presentation. */
+.aco-pf-pager--basic {
+  gap: 0.75rem;
+}
+
+/* Rounded pill: one continuous control with rounded page buttons. */
+.aco-pf-pager--pill {
+  width: fit-content;
+  margin-inline: auto;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: 999px;
+  background: var(--aco-pf-bg, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.aco-pf-pager--pill .aco-pf-pager__btn {
+  border-color: transparent;
+  border-radius: 999px;
+}
+
+.aco-pf-pager--pill .aco-pf-pager__page {
+  border-radius: 999px;
+}
+
+/* Numbered: lightweight page numbers with a strong current-page marker. */
+.aco-pf-pager--numbered {
+  gap: 0.5rem;
+}
+
+.aco-pf-pager--numbered .aco-pf-pager__btn {
+  border-color: transparent;
+  padding-inline: 0.65rem;
+}
+
+/* Segmented toolbar: controls share one bordered container. */
+.aco-pf-pager--segmented {
+  width: fit-content;
+  margin-inline: auto;
+  gap: 0;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  overflow: hidden;
+  background: var(--aco-pf-bg, #fff);
+}
+
+.aco-pf-pager--segmented .aco-pf-pager__btn,
+.aco-pf-pager--segmented .aco-pf-pager__page {
+  border: 0;
+  border-radius: 0;
+}
+
+.aco-pf-pager--segmented .aco-pf-pager__pages {
+  padding-inline: 0.25rem;
+  border-inline: 1px solid var(--aco-pf-border);
+}
+
+/* Text links: remove chrome and use an underline for the active page. */
+.aco-pf-pager--text .aco-pf-pager__btn,
+.aco-pf-pager--text .aco-pf-pager__page {
+  border-color: transparent;
+  background: transparent;
+}
+
+.aco-pf-pager--text .aco-pf-pager__btn:hover,
+.aco-pf-pager--text .aco-pf-pager__page:hover {
+  color: var(--aco-pf-accent, currentColor);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.aco-pf-pager--text .aco-pf-pager__page[aria-current="page"] {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #1f2937 !important;
+  color: color-mix(in srgb, var(--aco-pf-accent, #1f2937) 80%, #000) !important;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Go-to-page layout: keep the jump form aligned with the page controls. */
+.aco-pf-pager--jump {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--aco-pf-border);
+  border-radius: 999px;
+  background: var(--aco-pf-bg, #fff);
+}
+
+/* The hidden attribute must win over the flex/inline displays above. */
+[data-aco-pf-root] [hidden] {
+  display: none !important;
+}
+
+@media (max-width: 749px) {
+  .aco-pf-pager {
+    gap: 0.4rem;
+  }
+
+  .aco-pf-pager--jump {
+    border-radius: var(--aco-pf-radius, 0.375rem);
+  }
+
+  .aco-pf-pager__pages {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Collection tree ---- */
+.aco-pf-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aco-pf-row-gap, 0.4rem);
+}
+
+.aco-pf-value--tree {
+  padding-left: calc(var(--aco-pf-depth, 0) * 1.1rem);
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Expand/collapse caret. Rotates closed via aria-expanded (pf-filters.js). */
+.aco-pf-tree__caret {
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.aco-pf-tree__caret::before {
+  content: "";
+  width: 0.35rem;
+  height: 0.35rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.aco-pf-tree__caret[aria-expanded="false"]::before {
+  transform: rotate(-45deg);
+}
+
+.aco-pf-tree__caret--leaf {
+  cursor: default;
+}
+
+.aco-pf-tree__caret--leaf::before {
+  display: none;
+}
+
+/* Current collection (navigate mode) / checked node ancestors. */
+.aco-pf-value--tree.aco-pf-value--current > .aco-pf-value__label {
+  font-weight: 600;
+}
+
+/* Hide a duplicate theme product grid on pages where our filters are injected.
+   Do not hide the whole section: Horizon puts the collection title ("Products")
+   in a section that can also contain product links. */
+html:has([data-aco-pf-root])
+  .shopify-section:not(:has([data-aco-pf-root])):not(:has(header)):not(
+    :has(footer)
+  )
+  :is(
+    .product-grid,
+    .product-grid-container,
+    #product-grid,
+    #ProductGridContainer,
+    .collection-wrapper
+  ):not(:has([data-aco-pf-root])):not([data-aco-pf-theme-grid] *),
+[data-aco-pf-hidden-theme-grid]:not(:has([data-aco-pf-root])) {
+  display: none !important;
+}
+
+[data-aco-pf-grid].aco-pf-grid {
+  display: grid !important;
+}
+
+/* Theme card mode: the ACO grid is parked (hidden) while the merchant's own
+   grid markup, fetched through the theme card mirror, is shown in its place. */
+[data-aco-pf-grid][hidden] {
+  display: none !important;
+}
+
+[data-aco-pf-theme-grid] {
+  display: block;
+}
+
+/* The theme's own card container follows the app's column count (switcher or
+   merchant setting), whatever layout the theme gave it. */
+[data-aco-pf-theme-grid] [data-aco-pf-cards] {
+  display: grid !important;
+  grid-template-columns: repeat(
+    var(--aco-pf-cols, 3),
+    minmax(0, 1fr)
+  ) !important;
+}
+/* The ancestors cloned from the mirror keep theme CSS scoping, but their
+   layout (a sidebar + products grid, page containers) must not narrow the
+   cards: our results column is already the right width. */
+[data-aco-pf-theme-grid] [data-aco-pf-wrap],
+[data-aco-pf-theme-grid] [data-aco-pf-cards] {
+  display: block;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  flex: none !important;
+  grid-column: 1 / -1 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+[data-aco-pf-theme-grid] [data-aco-pf-wrap] {
+  display: block !important;
+}
+[data-aco-pf-theme-grid] [data-aco-pf-cards] > * {
+  width: auto !important;
+  max-width: none !important;
+  flex: none !important;
+  grid-column: auto !important;
+}
+@media (max-width: 989px) {
+  [data-aco-pf-theme-grid] [data-aco-pf-cards] {
+    grid-template-columns: repeat(
+      var(--aco-pf-cols-mobile, 2),
+      minmax(0, 1fr)
+    ) !important;
+  }
+}
