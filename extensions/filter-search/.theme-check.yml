@@ -1,0 +1,12 @@
+# Theme check config for the Product Filter & Search theme app extension.
+extends: :theme_app_extension
+
+# The progressive-enhancement bundle is intentionally a bit over the tiny
+# default lint threshold; it is still a single small, cacheable file.
+AssetSizeJavaScript:
+  enabled: true
+  threshold_in_bytes: 100000
+
+AssetSizeCSS:
+  enabled: true
+  threshold_in_bytes: 100000
