@@ -1,0 +1,24 @@
+{%- comment -%}
+  Sort dropdown, rendered from cfg.sort (the app omits that key entirely when
+  sorting is disabled or no option is enabled, so this renders nothing).
+
+  Deliberately OUTSIDE [data-aco-pf-form]: the form's FormData drives the filter
+  params, and sort is carried separately (pf_sort) by pf-filters.js. With no
+  pf_sort in the URL the first option (merchant order) is the starting sort;
+  the script re-syncs from the URL on load so a shared sorted link restores.
+
+  Params: pf_sort (the cfg.sort object), pf_sort_uid (unique id suffix).
+{%- endcomment -%}
+{%- if pf_sort -%}
+  <div class="aco-pf-sort aco-pf-sort--{{ pf_sort.position | default: 'toolbar' }}">
+    <label
+      class="aco-pf-sort__label{% if pf_sort.showLabel == false %} aco-pf-sort__label--hidden{% endif %}"
+      for="aco-pf-sort-{{ pf_sort_uid }}"
+    >{{ pf_sort.label | default: 'Sort by' | escape }}</label>
+    <select id="aco-pf-sort-{{ pf_sort_uid }}" class="aco-pf-sort__select" data-aco-pf-sort>
+      {%- for opt in pf_sort.options -%}
+        <option value="{{ opt.key | escape }}">{{ opt.label | escape }}</option>
+      {%- endfor -%}
+    </select>
+  </div>
+{%- endif -%}
