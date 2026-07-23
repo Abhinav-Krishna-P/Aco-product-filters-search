@@ -1,0 +1,241 @@
+{%- comment -%}
+  Renders one filter group from the app config (shop metafield pf_config.settings),
+  using our own URL param scheme (not Shopify's native filter params):
+
+    availability  -> pf_available=1
+    price         -> pf_price_min / pf_price_max
+    productType   -> pf_type       (repeatable = OR)
+    productVendor -> pf_vendor
+    tag           -> pf_tag
+    variantOption -> pf_opt_<name>
+
+  Config v3: each filter carries displayStyle (checkbox|radio|swatch|image|pill|
+  dropdown|range), a resolved defaultOpen boolean, collapseAfter, selectionMode
+  and searchable. List filters carry valuesMeta [{raw,label,color,image}] next
+  to the legacy values[] (raw strings) for backward compatibility.
+
+  Active/checked state is applied client-side by pf-filters.js from the URL, so
+  SSR renders everything unchecked.
+
+  Params:
+    filter        - a config filter object
+    swatch_labels - show text label next to color/image swatches (from config)
+{%- endcomment -%}
+{%- liquid
+  assign f = filter
+  assign kind = f.type
+  assign style = f.displayStyle | default: 'checkbox'
+  assign open_default = true
+  if f.defaultOpen == false
+    assign open_default = false
+  endif
+-%}
+<details
+  class="aco-pf-group aco-pf-group--{{ style }}"
+  data-aco-pf-group
+  data-filter-type="{{ kind }}"
+  data-filter-key="{{ f.key | escape }}"
+  data-display-style="{{ style }}"
+  {% if f.name %}data-option-name="{{ f.name | escape }}"{% endif %}
+  {% if f.selectionMode == 'single' or style == 'radio' %}data-aco-pf-single{% endif %}
+  {% if f.collapseAfter and f.collapseAfter > 0 %}data-collapse-after="{{ f.collapseAfter }}"{% endif %}
+  {% if f.searchable %}data-aco-pf-searchable{% endif %}
+  {% if open_default %}open{% endif %}
+>
+  <summary class="aco-pf-group__summary">
+    <span class="aco-pf-group__label">{{ f.label | escape }}</span>
+    <span class="aco-pf-group__active" data-aco-pf-group-active hidden></span>
+    <span class="aco-pf-group__chevron" aria-hidden="true"></span>
+  </summary>
+
+  <div class="aco-pf-group__body">
+    {%- case kind -%}
+      {%- when 'available' -%}
+        <label class="aco-pf-value">
+          <input class="aco-pf-value__input" type="checkbox" name="pf_available" value="1" data-aco-pf-input>
+          <span class="aco-pf-value__label">In stock only</span>
+          <span class="aco-pf-value__count" data-aco-pf-count-for="available:1"></span>
+        </label>
+
+      {%- when 'price' -%}
+        <div class="aco-pf-price">
+          <div class="aco-pf-price__field">
+            <span class="aco-pf-price__currency">{{ cart.currency.symbol }}</span>
+            <input
+              class="aco-pf-price__input"
+              type="number"
+              inputmode="decimal"
+              name="pf_price_min"
+              placeholder="{{ f.min | default: 0 }}"
+              min="{{ f.min | default: 0 }}"
+              max="{{ f.max }}"
+              data-aco-pf-input
+            >
+          </div>
+          <span class="aco-pf-price__to" aria-hidden="true">–</span>
+          <div class="aco-pf-price__field">
+            <span class="aco-pf-price__currency">{{ cart.currency.symbol }}</span>
+            <input
+              class="aco-pf-price__input"
+              type="number"
+              inputmode="decimal"
+              name="pf_price_max"
+              placeholder="{{ f.max }}"
+              min="{{ f.min | default: 0 }}"
+              max="{{ f.max }}"
+              data-aco-pf-input
+            >
+          </div>
+        </div>
+
+      {%- when 'collection' -%}
+        {%- liquid
+          assign tree_mode = f.treeMode | default: 'filter'
+          # treeExpanded unset = expanded (the original behaviour).
+          assign tree_collapsed = false
+          if f.treeExpanded == false
+            assign tree_collapsed = true
+          endif
+        -%}
+        <div
+          class="aco-pf-tree"
+          data-aco-pf-tree
+          data-tree-mode="{{ tree_mode }}"
+          {% if f.treeAutoSelect %}data-aco-pf-tree-auto-select{% endif %}
+          {% if tree_collapsed %}data-aco-pf-tree-collapsed{% endif %}
+        >
+          {%- for vm in f.valuesMeta -%}
+            {%- assign vm_depth = vm.depth | default: 0 -%}
+            {%- if tree_mode == 'navigate' -%}
+              <a
+                class="aco-pf-value aco-pf-value--tree"
+                href="{{ routes.collections_url }}/{{ vm.raw | escape }}"
+                style="--aco-pf-depth: {{ vm_depth }}"
+                data-aco-pf-tree-node="{{ vm.raw | escape }}"
+                {% if vm.parent %}data-aco-pf-tree-parent="{{ vm.parent | escape }}"{% endif %}
+              >
+                {%- if vm.hasChildren -%}
+                  <span class="aco-pf-tree__caret" data-aco-pf-tree-toggle role="button" tabindex="0" aria-expanded="{% if tree_collapsed %}false{% else %}true{% endif %}" aria-label="Toggle {{ vm.label | escape }}"></span>
+                {%- else -%}
+                  <span class="aco-pf-tree__caret aco-pf-tree__caret--leaf" aria-hidden="true"></span>
+                {%- endif -%}
+                <span class="aco-pf-value__label">{{ vm.label | escape }}</span>
+                <span class="aco-pf-value__count" data-aco-pf-count-for="collection:{{ vm.raw | escape }}"></span>
+              </a>
+            {%- else -%}
+              <label
+                class="aco-pf-value aco-pf-value--tree"
+                style="--aco-pf-depth: {{ vm_depth }}"
+                data-aco-pf-tree-node="{{ vm.raw | escape }}"
+                {% if vm.parent %}data-aco-pf-tree-parent="{{ vm.parent | escape }}"{% endif %}
+              >
+                {%- if vm.hasChildren -%}
+                  <span class="aco-pf-tree__caret" data-aco-pf-tree-toggle role="button" tabindex="0" aria-expanded="{% if tree_collapsed %}false{% else %}true{% endif %}" aria-label="Toggle {{ vm.label | escape }}"></span>
+                {%- else -%}
+                  <span class="aco-pf-tree__caret aco-pf-tree__caret--leaf" aria-hidden="true"></span>
+                {%- endif -%}
+                <input class="aco-pf-value__input" type="checkbox" name="pf_collection" value="{{ vm.raw | escape }}" data-aco-pf-input>
+                <span class="aco-pf-value__label">{{ vm.label | escape }}</span>
+                <span class="aco-pf-value__count" data-aco-pf-count-for="collection:{{ vm.raw | escape }}"></span>
+              </label>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+
+      {%- else -%}
+        {%- comment -%} list-style: productType | productVendor | tag | variantOption {%- endcomment -%}
+        {%- liquid
+          case kind
+            when 'productType'
+              assign param = 'pf_type'
+            when 'productVendor'
+              assign param = 'pf_vendor'
+            when 'tag'
+              assign param = 'pf_tag'
+            when 'variantOption'
+              assign param = 'pf_opt_' | append: f.name
+            when 'custom'
+              assign param = 'pf_custom_' | append: f.key
+          endcase
+
+          assign list_class = 'aco-pf-list'
+          if style == 'swatch' or style == 'image'
+            assign list_class = 'aco-pf-list aco-pf-list--swatch'
+            if style == 'image'
+              assign list_class = list_class | append: ' aco-pf-list--image'
+            endif
+          elsif style == 'pill'
+            assign list_class = 'aco-pf-list aco-pf-list--pill'
+            if f.pillFill == 'transparent'
+              assign list_class = list_class | append: ' aco-pf-list--pill-outline'
+            endif
+          endif
+        -%}
+        {%- if f.searchable -%}
+          <input class="aco-pf-group__search" type="search" placeholder="Search..." data-aco-pf-value-search aria-label="Search {{ f.label | escape }}">
+        {%- endif -%}
+        <div class="{{ list_class }}" data-aco-pf-list {% if style == 'pill' and f.pillColor %}style="--aco-pf-pill-active: {{ f.pillColor | escape }}"{% endif %}>
+          {%- if f.valuesMeta -%}
+            {%- for vm in f.valuesMeta -%}
+              {%- if style == 'swatch' or style == 'image' -%}
+                <label class="aco-pf-value aco-pf-value--swatch" title="{{ vm.label | escape }}">
+                  <input class="aco-pf-value__input aco-pf-value__input--hidden" type="checkbox" name="{{ param }}" value="{{ vm.raw | escape }}" data-aco-pf-input>
+                  <span
+                    class="aco-pf-value__swatch"
+                    {% if vm.image %}
+                      style="background-image: url('{{ vm.image | escape }}')"
+                    {% elsif vm.color %}
+                      style="background: {{ vm.color | escape }}"
+                    {% else %}
+                      style="background: {{ vm.raw | handleize | escape }}"
+                    {% endif %}
+                  ></span>
+                  {%- if swatch_labels -%}
+                    <span class="aco-pf-value__label">{{ vm.label | escape }}</span>
+                    <span class="aco-pf-value__count" data-aco-pf-count-for="{{ kind }}:{{ vm.raw | escape }}"></span>
+                  {%- endif -%}
+                </label>
+              {%- elsif style == 'pill' -%}
+                <label class="aco-pf-value aco-pf-value--pill">
+                  <input class="aco-pf-value__input aco-pf-value__input--hidden" type="checkbox" name="{{ param }}" value="{{ vm.raw | escape }}" data-aco-pf-input>
+                  <span class="aco-pf-value__pill"><span class="aco-pf-value__label">{{ vm.label | escape }}</span><span class="aco-pf-value__count" data-aco-pf-count-for="{{ kind }}:{{ vm.raw | escape }}"></span></span>
+                </label>
+              {%- else -%}
+                <label class="aco-pf-value">
+                  <input class="aco-pf-value__input" type="checkbox" name="{{ param }}" value="{{ vm.raw | escape }}" data-aco-pf-input>
+                  <span class="aco-pf-value__label">{{ vm.label | escape }}</span>
+                  <span class="aco-pf-value__count" data-aco-pf-count-for="{{ kind }}:{{ vm.raw | escape }}"></span>
+                </label>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- else -%}
+            {%- comment -%} legacy v2 config: plain string values {%- endcomment -%}
+            {%- for v in f.values -%}
+              <label class="aco-pf-value">
+                <input class="aco-pf-value__input" type="checkbox" name="{{ param }}" value="{{ v | escape }}" data-aco-pf-input>
+                <span class="aco-pf-value__label">{{ v | escape }}</span>
+                <span class="aco-pf-value__count" data-aco-pf-count-for="{{ kind }}:{{ v | escape }}"></span>
+              </label>
+            {%- endfor -%}
+          {%- endif -%}
+        </div>
+        <button type="button" class="aco-pf-group__more" data-aco-pf-more hidden></button>
+        {%- if kind == 'custom' -%}
+          {%- comment -%}
+            Custom filters match by hand-picked product id rather than by a
+            product attribute, so the membership map travels with the group.
+            pf-filters.js parses it once on init (see parseCustomIds) and uses
+            it for both grid matching and facet counts. Ids are bare numerics —
+            the "gid://shopify/Product/" prefix is added back client-side.
+          {%- endcomment -%}
+          <script type="application/json" data-aco-pf-custom-ids>
+            [{%- for vm in f.valuesMeta -%}
+              {"raw":{{ vm.raw | json }},"ids":{{ vm.ids | json }}{%- if vm.vids -%},"vids":{{ vm.vids | json }}{%- endif -%}}{%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}]
+          </script>
+        {%- endif -%}
+    {%- endcase -%}
+
+    <a class="aco-pf-group__reset" data-aco-pf-group-reset hidden>Reset</a>
+  </div>
+</details>
