@@ -1,0 +1,246 @@
+{%- comment -%}
+  Presentational product grid. No network calls.
+  Params:
+    products     - a paginated product array
+    columns      - desktop column count
+    show_price   - boolean
+    product_card - cfg.productCard (design + quick-buy). Optional.
+{%- endcomment -%}
+{%- liquid
+  assign cols = columns | default: 3
+  assign pc = product_card
+  assign card_layout = pc.cardLayout | default: 'classic'
+  if card_layout != 'classic' and card_layout != 'split'
+    assign card_layout = 'classic'
+  endif
+  assign grid_classes = 'aco-pf-grid'
+  assign grid_classes = grid_classes | append: ' aco-pf-grid--layout-' | append: card_layout
+  assign ratio = pc.imageRatio | default: 'square'
+  assign grid_classes = grid_classes | append: ' aco-pf-grid--ratio-' | append: ratio
+  if pc.cardBorder
+    assign grid_classes = grid_classes | append: ' aco-pf-grid--card'
+  endif
+  if pc.hoverZoom
+    assign grid_classes = grid_classes | append: ' aco-pf-grid--zoom'
+  endif
+  if pc.textAlign == 'center'
+    assign grid_classes = grid_classes | append: ' aco-pf-grid--center'
+  endif
+  if pc.buttonStyle == 'outline'
+    assign grid_classes = grid_classes | append: ' aco-pf-grid--btn-outline'
+  endif
+  # srcset `sizes`: one column's share of the viewport, halved in the split
+  # layout (image beside the text). Lazy images also get `auto` so supporting
+  # browsers use the laid-out width; `auto` is only valid on lazy images.
+  # Shoppers can switch the grid to 3 columns (saved client-side, unknown
+  # here), so never assume narrower cards than 3 columns: undersizing blurs.
+  assign size_cols = cols
+  if size_cols > 3
+    assign size_cols = 3
+  endif
+  assign img_vw = 100 | divided_by: size_cols
+  assign img_vw_mobile = 50
+  if card_layout == 'split'
+    assign img_vw = img_vw | divided_by: 2
+    assign img_vw_mobile = 25
+  endif
+  assign img_sizes = '(min-width: 750px) ' | append: img_vw | append: 'vw, ' | append: img_vw_mobile | append: 'vw'
+  assign img_sizes_lazy = 'auto, ' | append: img_sizes
+  assign ss_mode = pc.slideshowMode | default: 'hover'
+  assign ss_max = pc.slideshowMaxImages | default: 5 | plus: 0
+  assign ss_speed = pc.slideshowSpeed | default: 1
+  if pc.imageSlideshow
+    assign grid_classes = grid_classes | append: ' aco-pf-grid--slideshow aco-pf-grid--ss-' | append: ss_mode
+    if ss_mode == 'arrows' and pc.slideshowArrowsAlways
+      assign grid_classes = grid_classes | append: ' aco-pf-grid--ss-arrows-always'
+    endif
+    if pc.slideshowDots
+      assign grid_classes = grid_classes | append: ' aco-pf-grid--ss-dots'
+    endif
+  endif
+  assign show_atc = false
+  assign show_buy = false
+  if pc.showAddToCart
+    assign show_atc = true
+  endif
+  if pc.showBuyNow
+    assign show_buy = true
+  endif
+  if show_atc or show_buy
+    assign grid_classes = grid_classes | append: ' aco-pf-grid--has-actions'
+  endif
+  assign atc_text = pc.addToCartText | default: 'Add to cart'
+  assign buy_text = pc.buyNowText | default: 'Buy it now'
+  assign choose_variant_text = pc.chooseVariantText | default: 'Choose variant' | escape
+  # Corner of the image the Sale / Out of stock badge sits in.
+  assign flag_pos = pc.badgePosition | default: 'top-left'
+  assign flag_size = pc.badgeSize | default: 'medium'
+  assign flag_class = 'aco-pf-card__flag aco-pf-card__flag--' | append: flag_pos | append: ' aco-pf-card__flag--' | append: flag_size
+  assign sale_badge_text = pc.saleBadgeText | default: 'Sale' | truncate: 15, '' | escape
+  assign soldout_badge_text = pc.soldOutBadgeText | default: 'Out of stock' | truncate: 15, '' | escape
+-%}
+<ul class="{{ grid_classes | escape }}" style="--aco-pf-cols: {{ cols }};" data-aco-pf-grid role="list">
+  {%- for product in products -%}
+    {%- comment -%} On search results, skip non-product items (articles, pages) {%- endcomment -%}
+    {%- if product.object_type and product.object_type != 'product' -%}
+      {%- continue -%}
+    {%- endif -%}
+    {%- liquid
+      # First-row cards are the LCP candidates: load them eagerly, at high priority.
+      assign pf_eager = false
+      if forloop.index <= 4
+        assign pf_eager = true
+      endif
+      assign v = product.selected_or_first_available_variant
+      assign variant_id = ''
+      if v
+        assign variant_id = v.id
+      endif
+      if pc.variantMode == 'productPage' and product.variants.size > 1
+        assign variant_id = ''
+      endif
+      assign pf_on_sale = false
+      if product.compare_at_price > product.price
+        assign pf_on_sale = true
+      endif
+      assign pf_flag = ''
+      if pc.showSaleBadge and pf_on_sale and product.available
+        capture pf_flag
+          echo '<span class="' | append: flag_class | append: ' aco-pf-card__badge aco-pf-card__badge--sale">' | append: sale_badge_text | append: '</span>'
+        endcapture
+      elsif pc.showSoldOutBadge and product.available == false
+        capture pf_flag
+          echo '<span class="' | append: flag_class | append: ' aco-pf-card__soldout">' | append: soldout_badge_text | append: '</span>'
+        endcapture
+      endif
+
+      assign color_option = nil
+      for option in product.options_with_values
+        assign oname = option.name | downcase
+        if oname contains 'color' or oname contains 'colour'
+          assign color_option = option
+        endif
+      endfor
+    -%}
+    <li class="aco-pf-card" data-aco-pf-id="{{ product.id }}" data-aco-pf-handle="{{ product.handle }}">
+      <a class="aco-pf-card__link" data-aco-pf-card data-aco-pf-id="{{ product.id }}" data-aco-pf-handle="{{ product.handle }}" data-aco-pf-title="{{ product.title | escape }}" data-aco-pf-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 80 | escape }}{% endif %}" href="{{ product.url }}">
+        {%- if pc.imageSlideshow and product.images.size > 1 -%}
+          <div class="aco-pf-card__media aco-pf-card__media--gallery" data-aco-pf-gallery data-aco-pf-mode="{{ ss_mode | escape }}" data-aco-pf-speed="{{ ss_speed }}">
+            <div class="aco-pf-card__slides">
+              {%- for image in product.images limit: ss_max -%}
+                {%- comment -%} Later slides defer their URLs (pf-filters.js hydrates them when shown). {%- endcomment -%}
+                {%- liquid
+                  if forloop.first
+                    assign pf_img_attr = ''
+                  else
+                    assign pf_img_attr = 'data-aco-pf-'
+                  endif
+                -%}
+                <img
+                  class="aco-pf-card__img aco-pf-card__slide{% if forloop.first %} is-active{% endif %}"
+                  {{ pf_img_attr }}src="{{ image | image_url: width: 400 }}"
+                  {{ pf_img_attr }}srcset="{{ image | image_url: width: 200 }} 200w, {{ image | image_url: width: 400 }} 400w, {{ image | image_url: width: 600 }} 600w"
+                  sizes="{% if forloop.first and pf_eager %}{{ img_sizes }}{% else %}{{ img_sizes_lazy }}{% endif %}"
+                  alt="{{ image.alt | escape }}"
+                  width="400"
+                  height="{{ 400 | divided_by: image.aspect_ratio | round }}"
+                  {% if forloop.first and pf_eager %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                >
+              {%- endfor -%}
+            </div>
+            {%- if ss_mode == 'arrows' -%}
+              <button type="button" class="aco-pf-card__nav aco-pf-card__nav--prev" data-aco-pf-gnav="-1" aria-label="Previous image">&lsaquo;</button>
+              <button type="button" class="aco-pf-card__nav aco-pf-card__nav--next" data-aco-pf-gnav="1" aria-label="Next image">&rsaquo;</button>
+            {%- endif -%}
+            {%- if pc.slideshowDots -%}
+              <div class="aco-pf-card__dots" data-aco-pf-dots>
+                {%- for image in product.images limit: ss_max -%}
+                  <span class="aco-pf-card__dot{% if forloop.first %} is-active{% endif %}"></span>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+            {{ pf_flag }}
+          </div>
+        {%- else -%}
+          <div class="aco-pf-card__media">
+            {%- if product.featured_image -%}
+              <img
+                class="aco-pf-card__img"
+                src="{{ product.featured_image | image_url: width: 400 }}"
+                srcset="{{ product.featured_image | image_url: width: 200 }} 200w, {{ product.featured_image | image_url: width: 400 }} 400w, {{ product.featured_image | image_url: width: 600 }} 600w"
+                sizes="{% if pf_eager %}{{ img_sizes }}{% else %}{{ img_sizes_lazy }}{% endif %}"
+                alt="{{ product.featured_image.alt | escape }}"
+                width="400"
+                height="{{ 400 | divided_by: product.featured_image.aspect_ratio | round }}"
+                {% if pf_eager %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+              >
+            {%- else -%}
+              {{ 'product-1' | placeholder_svg_tag: 'aco-pf-card__img aco-pf-card__img--placeholder' }}
+            {%- endif -%}
+            {{ pf_flag }}
+          </div>
+        {%- endif -%}
+
+        <div class="aco-pf-card__info">
+          {%- if pc.showVendor and product.vendor != blank -%}
+            <span class="aco-pf-card__vendor">{{ product.vendor }}</span>
+          {%- endif -%}
+          <span class="aco-pf-card__title">{{ product.title }}</span>
+          {%- if show_price -%}
+            <span class="aco-pf-card__price">
+              {%- if product.price_varies -%}
+                <span class="aco-pf-card__from">From</span> {{ product.price_min | money }}
+              {%- else -%}
+                {{ product.price | money }}
+              {%- endif -%}
+              {%- if product.compare_at_price > product.price -%}
+                {%- if pc.showComparePrice != false -%}
+                  <s class="aco-pf-card__was">{{ product.compare_at_price | money }}</s>
+                {%- endif -%}
+                {%- if pc.showDiscountBadge -%}
+                  {%- liquid
+                    assign pf_diff = product.compare_at_price | minus: product.price
+                    assign pf_pct = pf_diff | times: 100.0 | divided_by: product.compare_at_price | round
+                    assign badge_label = pc.discountBadgeText | default: 'Save' | escape
+                    assign badge_style = pc.discountBadgeStyle | default: 'solid'
+                  -%}
+                  <span class="aco-pf-card__badge aco-pf-card__badge--{{ badge_style | escape }}">{{ badge_label }} {{ pf_pct }}%</span>
+                {%- endif -%}
+              {%- endif -%}
+            </span>
+          {%- endif -%}
+          {%- if card_layout == 'split' and color_option -%}
+            <div class="aco-pf-card__swatches" aria-hidden="true">
+              {%- for value in color_option.values limit: 4 -%}
+                <span class="aco-pf-card__swatch" title="{{ value | escape }}" style="background: {{ value | downcase | replace: ' ', '' }};"></span>
+              {%- endfor -%}
+              {%- if color_option.values.size > 4 -%}
+                <span class="aco-pf-card__swatch-more">+{{ color_option.values.size | minus: 4 }}</span>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+      </a>
+      {%- if product.available -%}
+        {%- if show_atc or show_buy -%}
+          <div class="aco-pf-card__actions">
+            {%- if pc.variantMode == 'chooseVariant' and product.variants.size > 1 -%}
+              <button type="button" class="aco-pf-card__btn aco-pf-card__btn--atc" data-aco-pf-choose-variant data-aco-pf-product="{{ product.id }}" data-aco-pf-variant="" data-aco-pf-url="{{ product.url }}">{{ choose_variant_text }}</button>
+            {%- else -%}
+              {%- if show_atc -%}
+                <button type="button" class="aco-pf-card__btn aco-pf-card__btn--atc" data-aco-pf-atc data-aco-pf-variant="{{ variant_id }}" data-aco-pf-url="{{ product.url }}">{{ atc_text | escape }}</button>
+              {%- endif -%}
+              {%- if show_buy -%}
+                <button type="button" class="aco-pf-card__btn aco-pf-card__btn--buy" data-aco-pf-buynow data-aco-pf-variant="{{ variant_id }}" data-aco-pf-url="{{ product.url }}">{{ buy_text | escape }}</button>
+              {%- endif -%}
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    </li>
+  {%- else -%}
+    <li class="aco-pf-grid__empty">
+      <p>No products match the selected filters.</p>
+    </li>
+  {%- endfor -%}
+</ul>
