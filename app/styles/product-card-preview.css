@@ -1,0 +1,616 @@
+/* Product card preview — subset of storefront pf-filters.css card rules. */
+
+.aco-pf-preview-root {
+  --aco-pf-muted: #6b6b6b;
+  --aco-pf-border: #e5e5e5;
+  --aco-pf-bg: #fff;
+  --aco-pf-radius: 8px;
+  --aco-pf-gap: 1rem;
+}
+
+.aco-pf-preview-root .aco-pf-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--aco-pf-gap);
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: min(420px, 100%);
+  width: 100%;
+  align-content: start;
+}
+
+.aco-pf-preview-root .aco-pf-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--aco-pf-card-bg, transparent);
+  color: var(--aco-pf-card-fg, inherit);
+  border-radius: var(--aco-pf-card-radius, 0);
+  box-shadow: var(--aco-pf-card-shadow, none);
+}
+
+.aco-pf-preview-root .aco-pf-card__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.aco-pf-preview-root .aco-pf-card__media {
+  aspect-ratio: var(--aco-pf-card-ratio, 1 / 1);
+  overflow: hidden;
+  border-radius: var(--aco-pf-card-media-radius, 0.5rem);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.aco-pf-preview-root .aco-pf-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+  display: block;
+}
+
+.aco-pf-preview-root .aco-pf-grid--ratio-natural .aco-pf-card__img {
+  height: auto;
+}
+
+.aco-pf-preview-root .aco-pf-grid--zoom .aco-pf-card__img {
+  transition: transform 0.45s ease;
+}
+
+.aco-pf-preview-root .aco-pf-grid--zoom .aco-pf-card:hover .aco-pf-card__img {
+  transform: scale(1.06);
+}
+
+.aco-pf-preview-root .aco-pf-grid--card .aco-pf-card {
+  border: 1px solid var(--aco-pf-card-border, var(--aco-pf-border, #e5e5e5));
+  border-radius: var(--aco-pf-card-radius, var(--aco-pf-radius, 8px));
+  padding: 0.55rem;
+  background: var(--aco-pf-card-bg, var(--aco-pf-bg, #fff));
+  transition: box-shadow 0.2s ease;
+}
+
+.aco-pf-preview-root .aco-pf-grid--card .aco-pf-card:hover {
+  box-shadow: var(--aco-pf-card-shadow, 0 4px 16px rgba(0, 0, 0, 0.08));
+}
+
+.aco-pf-preview-root .aco-pf-grid--layout-split.aco-pf-grid--card .aco-pf-card,
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card {
+  padding: 0;
+}
+
+.aco-pf-preview-root .aco-pf-card__info {
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.aco-pf-preview-root .aco-pf-grid--center .aco-pf-card__info {
+  align-items: center;
+  text-align: center;
+}
+
+.aco-pf-preview-root .aco-pf-card__vendor {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aco-pf-muted);
+}
+
+.aco-pf-preview-root .aco-pf-card__title {
+  font-size: var(--aco-pf-card-title-size, 14px);
+  font-weight: var(--aco-pf-card-title-weight, 400);
+}
+
+.aco-pf-preview-root .aco-pf-card__price {
+  font-size: var(--aco-pf-card-price-size, 14px);
+  font-weight: 600;
+}
+
+.aco-pf-preview-root .aco-pf-card__was {
+  color: var(--aco-pf-muted);
+  font-weight: 400;
+  margin-left: 0.35rem;
+}
+
+.aco-pf-preview-root .aco-pf-card__badge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.aco-pf-preview-root .aco-pf-card__badge--solid {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: var(--aco-pf-badge-bg, #111111);
+  color: var(--aco-pf-badge-fg, #ffffff);
+}
+
+.aco-pf-preview-root .aco-pf-card__badge--outline {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: transparent;
+  color: var(--aco-pf-badge-bg, #111111);
+  box-shadow: inset 0 0 0 1px var(--aco-pf-badge-bg, #111111);
+}
+
+.aco-pf-preview-root .aco-pf-card__badge--text {
+  color: var(--aco-pf-badge-bg, #111111);
+}
+
+.aco-pf-preview-root .aco-pf-card__badge--sale {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  background: var(--aco-pf-sale-badge-bg, #d7263d);
+  color: var(--aco-pf-sale-badge-fg, #ffffff);
+}
+
+.aco-pf-preview-root .aco-pf-card__media--gallery {
+  position: relative;
+  aspect-ratio: var(--aco-pf-card-ratio, 1 / 1);
+}
+
+.aco-pf-preview-root .aco-pf-grid--ratio-natural .aco-pf-card__media--gallery {
+  aspect-ratio: 1 / 1;
+}
+
+.aco-pf-preview-root .aco-pf-card__slides {
+  position: absolute;
+  inset: 0;
+}
+
+.aco-pf-preview-root .aco-pf-card__media--gallery .aco-pf-card__slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.aco-pf-preview-root
+  .aco-pf-card__media--gallery
+  .aco-pf-card__slide.is-active {
+  opacity: 1;
+}
+
+.aco-pf-preview-root .aco-pf-card__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+}
+
+.aco-pf-preview-root .aco-pf-card__nav--prev {
+  left: 0.4rem;
+}
+
+.aco-pf-preview-root .aco-pf-card__nav--next {
+  right: 0.4rem;
+}
+
+.aco-pf-preview-root .aco-pf-card__dots {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.aco-pf-preview-root .aco-pf-card__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.45);
+}
+
+.aco-pf-preview-root .aco-pf-card__dot.is-active {
+  background: #fff;
+}
+
+.aco-pf-preview-root .aco-pf-card__soldout {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--aco-pf-radius, 0.375rem);
+  font-size: 0.75rem;
+  background: var(--aco-pf-soldout-badge-bg, #6b6b6b);
+  color: var(--aco-pf-soldout-badge-fg, #ffffff);
+}
+
+/* Sale / Out of stock badge overlaid on the image at the chosen corner. */
+.aco-pf-preview-root .aco-pf-card__media {
+  position: relative;
+}
+.aco-pf-preview-root .aco-pf-card__flag {
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  border-radius: 999px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.aco-pf-preview-root .aco-pf-card__flag--small {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.625rem;
+}
+.aco-pf-preview-root .aco-pf-card__flag--medium {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+}
+.aco-pf-preview-root .aco-pf-card__flag--large {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+.aco-pf-preview-root .aco-pf-card__flag--top-left {
+  top: 0.5rem;
+  left: 0.5rem;
+}
+.aco-pf-preview-root .aco-pf-card__flag--top-right {
+  top: 0.5rem;
+  right: 0.5rem;
+}
+.aco-pf-preview-root .aco-pf-card__flag--bottom-left {
+  bottom: 0.5rem;
+  left: 0.5rem;
+}
+.aco-pf-preview-root .aco-pf-card__flag--bottom-right {
+  bottom: 0.5rem;
+  right: 0.5rem;
+}
+
+/* Structural layouts in admin preview */
+.aco-pf-preview-root .aco-pf-card__accent { display: none; }
+.aco-pf-preview-root .aco-pf-card__media { position: relative; }
+.aco-pf-preview-root .aco-pf-card__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+.aco-pf-preview-root .aco-pf-card__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+}
+.aco-pf-preview-root .aco-pf-card__swatch.is-active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #111;
+}
+.aco-pf-preview-root .aco-pf-card__swatch-more {
+  font-size: 0.7rem;
+  color: #6d7175;
+}
+.aco-pf-preview-root .aco-pf-card__subtitle {
+  font-size: 0.75rem;
+  color: #6d7175;
+}
+.aco-pf-preview-root .aco-pf-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.35rem 0 0;
+}
+.aco-pf-preview-root .aco-pf-card__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.aco-pf-preview-root .aco-pf-card__options-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6d7175;
+}
+.aco-pf-preview-root .aco-pf-card__option-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+}
+.aco-pf-preview-root .aco-pf-card__option-value {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+.aco-pf-preview-root .aco-pf-card__option-value.is-active {
+  color: #111;
+  font-weight: 650;
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card {
+  display: grid;
+  grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: stretch;
+  /* Border comes only from .aco-pf-grid--card ("Bordered card"). */
+  border-radius: var(--aco-pf-card-radius, 12px);
+  background: var(--aco-pf-card-bg, #fff);
+  box-shadow: var(--aco-pf-card-shadow, 0 2px 10px rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+  padding: 0;
+  min-height: 11.5rem;
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__link {
+  display: contents;
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__media,
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__media--gallery {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 100%;
+  max-width: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  align-self: stretch;
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__media .aco-pf-card__img,
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__img,
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__slide {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  object-fit: var(--aco-pf-card-fit, cover);
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__media--gallery .aco-pf-card__slides {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__info {
+  grid-column: 2;
+  grid-row: 1;
+  flex: 1 1 auto;
+  padding: 0.75rem 0.85rem 0.35rem;
+  justify-content: center;
+  min-width: 0;
+  align-self: center;
+}
+.aco-pf-preview-root .aco-pf-grid--layout-split .aco-pf-card__actions {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 0.35rem 0.85rem 0.85rem;
+  margin-top: 0;
+}
+
+.aco-pf-preview-root .aco-pf-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+.aco-pf-preview-root .aco-pf-card__btn {
+  appearance: none;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--aco-pf-btn-radius, 6px);
+  border: 1px solid var(--aco-pf-btn-bg, #111111);
+  background: var(--aco-pf-btn-bg, #111111);
+  color: var(--aco-pf-btn-fg, #ffffff);
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.aco-pf-preview-root .aco-pf-card__btn--outline {
+  background: transparent;
+  color: var(--aco-pf-btn-bg, #111111);
+}
+
+.aco-pf-preview-root .aco-pf-card__btn--outline {
+  background: transparent;
+  color: var(--aco-pf-btn-bg, #111111);
+}
+
+.aco-pf-preview-root .aco-pf-card__btn--outline:hover {
+  background: var(--aco-pf-btn-bg, #111111);
+  color: var(--aco-pf-btn-fg, #ffffff);
+}
+
+.aco-pf-preview-frame {
+  background: var(--p-color-bg-surface-secondary, #f6f6f7);
+  border-radius: 12px;
+  padding: 1.25rem;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.customizer-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--p-color-bg, #f6f6f7);
+}
+
+/* The title bar (heading + Save) is drawn by the admin outside this iframe;
+   the in-page s-page element only reserves an empty grey band, so collapse it.
+   The slotted Save button keeps working: the admin reads it from the DOM. */
+.customizer-shell > s-page {
+  display: block;
+  height: 0;
+  overflow: hidden;
+}
+
+.customizer-layout {
+  display: grid;
+  /* Nav fixed; settings and preview split remaining space evenly. */
+  grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--p-color-border, #e1e3e5);
+}
+
+.customizer-nav {
+  border-right: 1px solid var(--p-color-border, #e1e3e5);
+  padding: 16px 12px;
+  background: var(--p-color-bg-surface, #fff);
+  overflow-y: auto;
+}
+
+.customizer-nav__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  background: transparent;
+  color: var(--p-color-text-secondary, #6d7175);
+}
+
+.customizer-nav__btn:hover {
+  background: var(--p-color-bg-surface-hover, #f1f1f1);
+}
+
+.customizer-nav__btn.is-locked,
+.customizer-nav__btn.is-locked:hover {
+  background: transparent;
+  color: var(--p-color-text-disabled, #b5b5b5);
+  cursor: not-allowed;
+}
+
+.customizer-preview__unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px 20px;
+  border: 1px dashed var(--p-color-border, #e1e3e5);
+  border-radius: 12px;
+  background: var(--p-color-bg-surface, #fff);
+  text-align: center;
+}
+
+.customizer-nav__btn.is-active {
+  font-weight: 600;
+  background: var(--p-color-bg-surface-selected, #f1f1f1);
+  color: var(--p-color-text, #202223);
+}
+
+.customizer-settings {
+  overflow-y: auto;
+  padding: 20px 24px;
+  background: var(--p-color-bg-surface, #fff);
+}
+
+/* Keep Custom CSS fixed height so long CSS scrolls inside the field. */
+.pf-custom-css-field textarea {
+  max-height: 180px !important;
+  min-height: 140px !important;
+  height: 160px !important;
+  resize: none !important;
+  overflow-y: auto !important;
+  field-sizing: fixed;
+}
+
+.customizer-preview {
+  border-left: 1px solid var(--p-color-border, #e1e3e5);
+  padding: 20px 16px;
+  background: var(--p-color-bg-surface-secondary, #f6f6f7);
+  overflow-y: auto;
+}
+
+.customizer-nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---- Responsive customizer window ----
+   Tablet: nav + settings side by side, preview moves below.
+   Phone: one column; the section nav becomes a horizontal scroller. */
+@media (max-width: 1024px) {
+  .customizer-layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .customizer-preview {
+    grid-column: 1 / -1;
+    border-left: none;
+    border-top: 1px solid var(--p-color-border, #e1e3e5);
+  }
+}
+
+@media (max-width: 720px) {
+  .customizer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .customizer-nav {
+    border-right: none;
+    border-bottom: 1px solid var(--p-color-border, #e1e3e5);
+    padding: 8px 12px;
+    overflow: visible;
+  }
+  .customizer-nav__caption {
+    display: none;
+  }
+  .customizer-nav__list {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .customizer-nav__list::-webkit-scrollbar {
+    display: none;
+  }
+  .customizer-nav__btn {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+  .customizer-settings {
+    padding: 16px;
+  }
+  .customizer-preview {
+    padding: 16px;
+  }
+}
