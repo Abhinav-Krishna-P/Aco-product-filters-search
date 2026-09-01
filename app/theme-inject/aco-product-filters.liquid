@@ -1,0 +1,289 @@
+{%- comment -%}
+  Injected into the theme collection/search product-grid section (Theme API).
+  Renders ACO filters from shop.metafields.pf_config.settings in the SAME
+  section as card-product, then hides the theme's native facets + listing.
+{%- endcomment -%}
+{%- liquid
+  assign cfg = shop.metafields.pf_config.settings.value
+  assign heading = cfg.layout.headingText | default: 'Filters'
+  assign show_price = true
+  if cfg.productCard.showPrice == false
+    assign show_price = false
+  endif
+  assign token = cfg.token
+  assign lay = cfg.layout
+  assign pagination_style = lay.paginationStyle | default: 'basic'
+  assign per_page = lay.productsPerPage | default: 15 | plus: 0
+  if per_page < 10
+    assign per_page = 10
+  elsif per_page > 30
+    assign per_page = 30
+  endif
+  assign structure = lay.structure | default: 'sidebar-left'
+  assign layout_classes = 'aco-pf-layout aco-pf-layout--' | append: structure
+  if structure == 'horizontal'
+    assign hstyle = lay.horizontalStyle | default: 'outlined'
+    assign layout_classes = layout_classes | append: ' aco-pf-hbar--' | append: hstyle
+  endif
+  assign columns = lay.columnsDesktop | default: 3 | plus: 0
+  assign mobile_mode = lay.mobileMode | default: 'drawer'
+  assign swatch_labels = true
+  if cfg.swatch and cfg.swatch.showLabel == false
+    assign swatch_labels = false
+  endif
+
+  assign pf_context = 'collection'
+  assign pf_base = collection.url
+  assign pf_count = collection.products_count
+  if request.page_type == 'search'
+    assign pf_context = 'search'
+    assign pf_base = routes.search_url
+    assign pf_count = search.results_count
+  endif
+
+  assign root_classes = 'aco-pf-app'
+  if mobile_mode == 'drawer'
+    assign root_classes = root_classes | append: ' aco-pf-app--mobile-drawer'
+  endif
+  if lay.showGroupDividers == false
+    assign root_classes = root_classes | append: ' aco-pf-app--no-dividers'
+  endif
+  # Sticky applies to sidebar layouts only (the setting is hidden for others
+  # in the admin but stays saved after switching layouts).
+  if lay.sidebarSticky and structure != 'horizontal'
+    assign root_classes = root_classes | append: ' aco-pf-app--sticky-sidebar'
+  endif
+  if cfg.behavior and cfg.behavior.smartFilters
+    assign root_classes = root_classes | append: ' aco-pf-app--smart-filters'
+  endif
+  if cfg.swatch
+    assign root_classes = root_classes | append: ' aco-pf-swatch--' | append: cfg.swatch.selectedIndicator
+    assign hover_effect = cfg.swatch.hoverEffect | default: 'grow'
+    if cfg.swatch.hoverEnabled == false
+      assign hover_effect = 'none'
+    endif
+    assign root_classes = root_classes | append: ' aco-pf-hover--' | append: hover_effect
+  endif
+  assign group_icon = cfg.groupIcon | default: 'chevron'
+  assign root_classes = root_classes | append: ' aco-pf-icon--' | append: group_icon
+  if cfg.groupIconAnimate != false
+    assign root_classes = root_classes | append: ' aco-pf-icon-anim'
+  endif
+
+  # Theme card mode: the storefront JS renders filtered pages through the
+  # theme card mirror (pf_config.theme_cards, see themeCardMirror.server.ts).
+  # The ACO SSR grid is replaced by an empty skeleton grid so JS fetches page 1.
+  # Merchant override for themes whose filters/grid the defaults below miss
+  # (sanitized server-side; Developer options → "Theme elements to hide").
+  assign hide_selectors = ''
+  assign keep_selectors = ''
+  if cfg.behavior.developer.enabled
+    if cfg.behavior.developer.hideSelectors != blank
+      assign hide_selectors = cfg.behavior.developer.hideSelectors | strip
+    endif
+    if cfg.behavior.developer.keepSelectors != blank
+      assign keep_selectors = cfg.behavior.developer.keepSelectors | strip
+    endif
+  endif
+
+  assign catalog_version = shop.metafields.pf_config.catalog_version.value
+  assign theme_cards = shop.metafields.pf_config.theme_cards.value
+  assign use_theme_cards = false
+  if cfg.productCard.cardSource == 'theme' and theme_cards != blank
+    # Same pick as the storefront JS (themeContext): the search mirror on the
+    # search page, otherwise the collection mirror.
+    if pf_context == 'search' and theme_cards.search.ok == true
+      assign use_theme_cards = true
+    elsif theme_cards.collection.ok == true
+      assign use_theme_cards = true
+    endif
+  endif
+-%}
+
+<style>
+  #aco-pf-inject[data-aco-pf-root]:not(.aco-pf-ready) {
+    visibility: hidden;
+    animation: aco-pf-reveal 0s linear 4s forwards;
+  }
+  @keyframes aco-pf-reveal { to { visibility: visible; } }
+  #shopify-section-{{ section.id }} #main-collection-filters:not([data-aco-pf-theme-grid] *),
+  #shopify-section-{{ section.id }} .facets-wrapper:not([data-aco-pf-theme-grid] *),
+  #shopify-section-{{ section.id }} facet-filters-form:not([data-aco-pf-theme-grid] *) {
+    display: none !important;
+  }
+  {%- unless use_theme_cards -%}
+  #shopify-section-{{ section.id }} #ProductGridContainer:not([data-aco-pf-theme-grid] *),
+  #shopify-section-{{ section.id }} #product-grid:not([data-aco-pf-theme-grid] *),
+  #shopify-section-{{ section.id }} .product-grid-container:not([data-aco-pf-theme-grid] *) {
+    display: none !important;
+  }
+  {%- if hide_selectors == blank -%}
+  /* The ids above are Dawn's. Any theme: the native filters + grid are what
+     follows this block in the section, so hide every later sibling. Wrappers
+     that also hold the page's search box / heading are left to the JS, which
+     hides only their grid parts (hideNativeThemeGrid). */
+  #shopify-section-{{ section.id }} #aco-pf-inject:not(.aco-pf-native-results) ~ *:not(:has(input[name="q"], h1)){% if keep_selectors != blank %}:not(:is({{ keep_selectors }})):not(:has(:is({{ keep_selectors }}))){% endif %} {
+    display: none !important;
+  }
+  {%- endif -%}
+  {%- endunless -%}
+  {%- if hide_selectors != blank -%}
+  #shopify-section-{{ section.id }} :is({{ hide_selectors }}):not(#aco-pf-inject):not(#aco-pf-inject *):not(:has(#aco-pf-inject)) {
+    display: none !important;
+  }
+  {%- endif -%}
+  {%- comment -%}
+    Theme card mode keeps the native grid in the HTML for no-JS visitors and
+    crawlers; aco-pf-filters.js marks it [data-aco-pf-hidden-theme-grid] once
+    it takes over (rule in aco-pf-filters.css).
+  {%- endcomment -%}
+</style>
+<noscript>
+  <style>#aco-pf-inject[data-aco-pf-root] { visibility: visible !important; }</style>
+</noscript>
+
+<div
+  class="{{ root_classes }}"
+  id="aco-pf-inject"
+  data-aco-pf-root
+  data-aco-pf-inject
+  data-context="{{ pf_context }}"
+  {% if pf_context == 'search' %}data-terms="{{ search.terms | escape }}"{% endif %}
+  data-shop="{{ shop.permanent_domain }}"
+  data-api-version="2026-07"
+  data-token="{{ token }}"
+  data-catalog-version="{{ catalog_version | escape }}"
+  data-ph-key="{{ cfg.phKey }}"
+  data-ph-host="{{ cfg.phHost }}"
+  data-pagination-style="{{ pagination_style }}"
+  data-per-page="{{ per_page }}"
+  data-columns="{{ columns }}"
+  data-columns-mobile="{{ lay.columnsMobile | default: 2 }}"
+  data-show-price="{% if show_price %}true{% else %}false{% endif %}"
+  data-base-url="{{ pf_base }}"
+  {% if hide_selectors != blank %}data-hide-selectors="{{ hide_selectors | escape }}"{% endif %}
+  {% if keep_selectors != blank %}data-keep-selectors="{{ keep_selectors | escape }}"{% endif %}
+  {% if cfg.behavior %}data-behavior='{{ cfg.behavior | json | escape }}'{% endif %}
+  {% if cfg.productCard %}data-product-card='{{ cfg.productCard | json | escape }}'{% endif %}
+  {% if theme_cards != blank %}data-theme-cards='{{ theme_cards | json | escape }}'{% endif %}
+  {% if cfg.cssVars %}style="{{ cfg.cssVars | escape }}"{% endif %}
+>
+  {%- if cfg == blank or cfg.filters == blank -%}
+    <div class="aco-pf-notice">
+      <p>Filters aren&apos;t set up yet. Open the app and click <strong>Detect filter values</strong>.</p>
+    </div>
+  {%- elsif token == blank -%}
+    <div class="aco-pf-notice">
+      <p>Missing Storefront token. Re-run <strong>Detect filter values</strong> in the app.</p>
+    </div>
+  {%- endif -%}
+
+  <button type="button" class="aco-pf-drawer-toggle" data-aco-pf-drawer-toggle hidden>
+    <span aria-hidden="true">☰</span> Filters <span class="aco-pf-drawer-toggle__count" data-aco-pf-drawer-count hidden></span>
+  </button>
+  <div class="aco-pf-drawer-backdrop" data-aco-pf-drawer-backdrop hidden></div>
+
+  <div class="{{ layout_classes }}">
+    <aside class="aco-pf-sidebar" data-aco-pf-sidebar>
+      <form class="aco-pf-form" method="get" action="{{ pf_base }}" data-aco-pf-form>
+        <div class="aco-pf-sidebar__head">
+          {%- if lay.showHeading != false -%}
+            <h2 class="aco-pf-sidebar__title">{{ heading | escape }}</h2>
+          {%- endif -%}
+          <button type="button" class="aco-pf-drawer-close" data-aco-pf-drawer-close hidden aria-label="Close filters">&times;</button>
+        </div>
+
+        {%- if cfg.sort and cfg.sort.position == 'panel' -%}
+          {% render 'aco-pf-sort', pf_sort: cfg.sort, pf_sort_uid: 'inject' %}
+        {%- endif -%}
+
+        {%- if lay.showActiveChips != false -%}
+          <div class="aco-pf-active" data-aco-pf-active hidden>
+            <span class="aco-pf-active__label">Applied:</span>
+            <ul class="aco-pf-active__list" data-aco-pf-active-list></ul>
+            {%- if lay.showClearAll != false -%}
+              <a class="aco-pf-active__clear" data-aco-pf-clear href="{{ pf_base }}">Clear all</a>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        {%- if cfg.filters -%}
+          <div class="aco-pf-groups">
+            {%- for filter in cfg.filters -%}
+              {%- if filter.enabled -%}
+                {% render 'aco-pf-config-group', filter: filter, swatch_labels: swatch_labels %}
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+          <button type="submit" class="aco-pf-apply" data-aco-pf-apply hidden>{{ cfg.behavior.applyButton.text | default: 'Apply filters' | escape }}</button>
+        {%- endif -%}
+      </form>
+    </aside>
+
+    <section class="aco-pf-results" data-aco-pf-results aria-live="polite">
+      <div class="aco-pf-results__head">
+        {%- if lay.showResultsCount != false -%}
+          <span class="aco-pf-results__count" data-aco-pf-count>{{ pf_count }} products</span>
+        {%- else -%}
+          <span></span>
+        {%- endif -%}
+        {%- if cfg.sort and cfg.sort.position != 'panel' and cfg.sort.position != 'top-right' -%}
+          {% render 'aco-pf-sort', pf_sort: cfg.sort, pf_sort_uid: 'inject-toolbar' %}
+        {%- endif -%}
+        <div class="aco-pf-results__head-end">
+          {%- if cfg.behavior and cfg.behavior.smartFilters -%}
+            <form class="aco-pf-smart" data-aco-pf-smart role="search" action="/apps/pf-filter/smart-filters" method="post">
+              <label class="aco-pf-smart__label" for="aco-pf-smart-input">Smart Filters</label>
+              <p class="aco-pf-smart__status" data-aco-pf-smart-status hidden></p>
+              <input
+                id="aco-pf-smart-input"
+                class="aco-pf-smart__input"
+                type="search"
+                name="q"
+                autocomplete="off"
+                enterkeyhint="search"
+                placeholder="Smart filters…"
+                data-aco-pf-smart-input
+              >
+            </form>
+          {%- endif -%}
+          {%- if cfg.sort and cfg.sort.position == 'top-right' -%}
+            {% render 'aco-pf-sort', pf_sort: cfg.sort, pf_sort_uid: 'inject-top-right' %}
+          {%- endif -%}
+          {%- if lay.showColumnSwitcher != false -%}
+            <div class="aco-pf-cols-switch" data-aco-pf-cols-switch role="group" aria-label="Grid columns">
+              <button type="button" class="aco-pf-cols-btn" data-aco-pf-cols="3" aria-pressed="{% if columns == 3 %}true{% else %}false{% endif %}" aria-label="3 columns">3</button>
+              <button type="button" class="aco-pf-cols-btn" data-aco-pf-cols="4" aria-pressed="{% if columns == 4 %}true{% else %}false{% endif %}" aria-label="4 columns">4</button>
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+
+      {%- if use_theme_cards -%}
+        <ul class="aco-pf-grid aco-pf-grid--skeletons" data-aco-pf-grid role="list"></ul>
+      {%- elsif pf_context == 'search' -%}
+        {%- paginate search.results by per_page -%}
+          {% render 'aco-pf-product-grid', products: search.results, columns: columns, show_price: show_price, product_card: cfg.productCard %}
+        {%- endpaginate -%}
+      {%- else -%}
+        {%- paginate collection.products by per_page -%}
+          {% render 'aco-pf-product-grid', products: collection.products, columns: columns, show_price: show_price, product_card: cfg.productCard %}
+        {%- endpaginate -%}
+      {%- endif -%}
+
+      <nav class="aco-pf-pager aco-pf-pager--{{ pagination_style }}" data-aco-pf-pager hidden aria-label="Pagination">
+        <button type="button" class="aco-pf-pager__btn" data-aco-pf-prev disabled>&larr; Previous</button>
+        <span class="aco-pf-pager__status" data-aco-pf-page>Page 1</span>
+        <button type="button" class="aco-pf-pager__btn" data-aco-pf-next>Next &rarr;</button>
+      </nav>
+    </section>
+  </div>
+
+  {%- if cfg.customCss and cfg.customCss != blank -%}
+    <style>{{ cfg.customCss }}</style>
+  {%- endif -%}
+</div>
+
+{{ 'aco-pf-filters.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'aco-pf-variant-picker.shared.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'aco-pf-filters.js' | asset_url }}" defer="defer"></script>
