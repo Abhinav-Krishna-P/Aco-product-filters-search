@@ -1,0 +1,36 @@
+/* Keep shell sizing in CSS as a fallback; critical width is also inlined
+   on the onboarding shell to avoid FOUC while this file loads. */
+.onboarding-shell {
+  width: 100%;
+  max-width: 720px;
+  margin: 48px auto 24px;
+  padding-inline: 16px;
+  box-sizing: border-box;
+}
+
+.onboarding-shell > s-section {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+}
+
+.built-for-shopify-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e0f5ff;
+  color: #202223;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.built-for-shopify-badge__icon {
+  width: 12px;
+  height: 11px;
+  flex: none;
+}
