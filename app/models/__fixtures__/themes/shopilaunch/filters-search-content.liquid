@@ -1,0 +1,69 @@
+
+
+{% assign items_per_page = section.settings.items_per_page | default: 20 %}
+
+<xo-filters-content>
+  {% paginate search.results by items_per_page %}
+    <div>
+      {%- if search.results.size == 0 and search.filters != empty -%}
+        {% assign empty_title = 'sections.collection_template.empty' | t %}
+        {% assign empty_content = 'sections.collection_template.use_fewer_filters_html' | t: link: search_url, class: 'underlined-link link' %}
+        {% render 'empty', title: empty_title, content: empty_content %}
+      {% else %}
+        <xo-grid
+          class='filters-content__grid'
+          style='--xs: {{ section.settings.columns_mobile }}; --sm: {{ section.settings.columns_mobile }}; --md: {{ section.settings.columns_desktop | minus: 1 }}; --lg: {{ section.settings.columns_desktop }}'
+        >
+          {%- for item in search.results -%}
+            {%- case item.object_type -%}
+              {%- when 'product' -%}
+                {% liquid
+                  assign placeholder_image_index = forloop.index0 | modulo: 4 | plus: 1
+                  assign placeholder_image = 'product-apparel-' | append: placeholder_image_index
+                %}
+                {% render 'product-card-styles',
+                  product_card_style: settings.product_card_style_layout,
+                  product: item,
+                  variant_modal_placement: settings.variant_modal_placement,
+                  show_image: section.settings.product_card_show_image,
+                  product_card_media_type: settings.product_card_media_type,
+                  show_vendor: section.settings.product_card_show_vendor,
+                  show_description: section.settings.product_card_show_description,
+                  show_quick_add: section.settings.product_card_show_quick_add,
+                  show_quick_view: section.settings.product_card_show_quick_view,
+                  show_wishlist: section.settings.product_card_show_wishlist,
+                  show_price: section.settings.product_card_show_price,
+                  show_badge: section.settings.product_card_show_badge,
+                  media_aspect_ratio: section.settings.product_card_aspect_ratio,
+                  color_scheme: section.settings.card_color_scheme,
+                  placeholder_image: placeholder_image
+                %}
+              {%- when 'article' -%}
+                {%- assign placeholder_image_index = forloop.index0 | modulo: 4 | plus: 1 -%}
+                {%- assign placeholder_image = 'product-apparel-' | append: placeholder_image_index -%}
+                {% render 'article-card-style1',
+                  article: item,
+                  media_aspect_ratio: section.settings.product_card_aspect_ratio,
+                  show_image: section.settings.article_card_show_image,
+                  show_date: section.settings.article_card_show_date,
+                  show_excerpt: section.settings.article_card_show_excerpt,
+                  placeholder_image: placeholder_image,
+                  color_scheme: section.settings.article_card_color_scheme
+                %}
+              {%- when 'page' -%}
+                <div>
+                  <a href='{{ item.url }}' class='filters-content__page' style='--aspect-ratio:{{ section.settings.product_card_aspect_ratio }}'>
+                    <span>{{ 'templates.search.page' | t }}</span>
+                    <span>{{ item.title | truncate: 50 | escape }}</span>
+                  </a>
+                </div>
+            {%- endcase -%}
+          {%- endfor -%}
+        </xo-grid>
+        <xo-filters-paginate>
+          {% render 'pagination', paginate: paginate %}
+        </xo-filters-paginate>
+      {%- endif -%}
+    </div>
+  {% endpaginate %}
+</xo-filters-content>

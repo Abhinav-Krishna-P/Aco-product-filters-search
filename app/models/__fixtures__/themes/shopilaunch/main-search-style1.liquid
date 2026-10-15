@@ -1,0 +1,50 @@
+{% comment %}
+  Renders a main-search-style1.
+
+  Usage:
+  {% render 'main-search-style1' %}
+{% endcomment %}
+
+<xo-grid>
+  {%- if section.settings.sidebar == 'left' -%}
+    {%- assign order_column = 0 -%}
+  {%- else -%}
+    {%- assign order_column = -1 -%}
+  {%- endif -%}
+  {% if section.settings.enable_filtering %}
+    <div style='--xs: 12; --sm: 12; --md: 4; --lg: 3; overflow:hidden' class='main-search-style1__sidebar' aria-labelledby='verticalTitle'>
+      {% for filter in search.filters %}
+        {% render 'filters-fieldset', type: 'block', filter: filter %}
+      {% endfor %}
+    </div>
+    <div style='--xs: 12; --sm: 12; --md: 8; --lg: 9;--order-md:{{ order_column }}'>
+      <div
+        class='main-search-style1__header'
+        aria-labelledby='verticalTitle'
+      >
+        {% render 'main-search-mobile' %}
+        {% render 'facets', results: search, enable_sorting: section.settings.enable_sorting, columns_desktop: section.settings.columns_desktop %}
+      </div>
+      {% render 'filters-search-content',
+        items_per_page: section.settings.items_per_page,
+        columns_mobile: section.settings.columns_mobile,
+        columns_desktop: section.settings.columns_desktop
+      %}
+    </div>
+  {% else %}
+    <div style='--xs: 12;'>
+      <div
+        class='main-search-style1__header'
+        aria-labelledby='verticalTitle'
+      >
+        {% render 'main-search-mobile' %}
+        {% render 'facets', results: search, enable_sorting: section.settings.enable_sorting, columns_desktop: section.settings.columns_desktop %}
+      </div>
+      {% render 'filters-search-content',
+        items_per_page: section.settings.items_per_page,
+        columns_mobile: section.settings.columns_mobile,
+        columns_desktop: section.settings.columns_desktop
+      %}
+    </div>
+  {% endif %}
+</xo-grid>

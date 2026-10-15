@@ -1,0 +1,144 @@
+{% comment %}
+  Renders a list of products card in main collection page
+
+  Accepts:
+  - product_loadtype: {string} Name of  product loadtype (optional)
+  - products_per_page: {number} Number of product cards per page (required)
+  - product_layout: {string} Type of layout (optional)
+  - columns_mobile: {number} Number of columns at mobile screen (required)
+  - columns_desktop: {number} Number of columns at desktop screen (required)
+
+  Usage:
+  {% render 'filters-content',
+    loadtype: 'paginate'
+  %}
+{% endcomment %}
+
+<xo-filters-content>
+  {% if product_loadtype == 'paginate' %}
+    {%- paginate collection.products by products_per_page -%}
+      <div>
+        {%- if collection.products.size == 0 -%}
+          {% assign empty_title = 'sections.collection_template.empty' | t %}
+          {% assign empty_content = 'sections.collection_template.use_fewer_filters_html' | t: link: collection.url, class: 'underlined-link link' %}
+          {% render 'empty', title: empty_title, content: empty_content %}
+        {%- else -%}
+          {%- if product_layout == 'grid' -%}
+            <xo-grid
+              class='filters-content__grid'
+              style='--xs: {{ columns_mobile }}; --sm: {{ columns_mobile }}; --md: {{ columns_desktop | minus: 1 }}; --lg: {{ columns_desktop }}'
+            >
+              {%- for product in collection.products -%}
+                {%- assign placeholder_image_index = forloop.index0 | modulo: 4 | plus: 1 -%}
+                {%- assign placeholder_image = 'product-apparel-' | append: placeholder_image_index -%}
+                {% render 'product-card-styles',
+                  product_card_style: settings.product_card_style_layout,
+                  product: product,
+                  variant_modal_placement: settings.variant_modal_placement,
+                  product_card_media_type: settings.product_card_media_type,
+                  show_image: section.settings.product_card_show_image,
+                  show_vendor: section.settings.product_card_show_vendor,
+                  show_description: section.settings.product_card_show_description,
+                  show_quick_add: section.settings.product_card_show_quick_add,
+                  show_quick_view: section.settings.product_card_show_quick_view,
+                  show_wishlist: section.settings.product_card_show_wishlist,
+                  show_price: section.settings.product_card_show_price,
+                  show_badge: section.settings.product_card_show_badge,
+                  media_aspect_ratio: section.settings.product_card_aspect_ratio,
+                  color_scheme: section.settings.card_color_scheme,
+                  placeholder_image: placeholder_image
+                %}
+              {%- endfor -%}
+            </xo-grid>
+          {%- else -%}
+            <div class='filters-content__list'>
+              {%- for product in collection.products -%}
+                {%- assign placeholder_image_index = forloop.index0 | modulo: 4 | plus: 1 -%}
+                {%- assign placeholder_image = 'product-apparel-' | append: placeholder_image_index -%}
+                {% render 'product-card-list',
+                  product: product,
+                  variant_modal_placement: settings.variant_modal_placement,
+                  product_card_media_type: settings.product_card_media_type,
+                  show_image: section.settings.product_card_show_image,
+                  show_vendor: section.settings.product_card_show_vendor,
+                  show_description: section.settings.product_card_show_description,
+                  show_quick_add: section.settings.product_card_show_quick_add,
+                  show_quick_view: section.settings.product_card_show_quick_view,
+                  show_wishlist: section.settings.product_card_show_wishlist,
+                  show_price: section.settings.product_card_show_price,
+                  show_badge: section.settings.product_card_show_badge,
+                  media_aspect_ratio: section.settings.product_card_aspect_ratio,
+                  color_scheme: section.settings.card_color_scheme,
+                  placeholder_image: placeholder_image
+                -%}
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+          <xo-filters-paginate>
+            {% render 'pagination', paginate: paginate, anchor: '' %}
+          </xo-filters-paginate>
+        {%- endif -%}
+      </div>
+    {%- endpaginate -%}
+  {% else %}
+    <div>
+      {%- if collection.products.size == 0 -%}
+        {% assign empty_title = 'sections.collection_template.empty' | t %}
+        {% assign empty_content = 'sections.collection_template.use_fewer_filters_html' | t: link: collection.url, class: 'underlined-link link' %}
+        {% render 'empty', title: empty_title, content: empty_content %}
+      {%- else -%}
+        {%- if product_layout == 'grid' -%}
+          <xo-grid
+            class='filters-content__grid'
+            style='--xs: {{ columns_mobile }}; --sm: {{ columns_mobile }}; --md: {{ columns_desktop | minus: 1 }}; --lg: {{ columns_desktop }}'
+          >
+            {%- for product in collection.products -%}
+              {%- assign placeholder_image_index = forloop.index0 | modulo: 4 | plus: 1 -%}
+              {%- assign placeholder_image = 'product-apparel-' | append: placeholder_image_index -%}
+              {% render 'product-card-styles',
+                product_card_style: settings.product_card_style_layout,
+                product: product,
+                variant_modal_placement: settings.variant_modal_placement,
+                product_card_media_type: settings.product_card_media_type,
+                show_image: section.settings.product_card_show_image,
+                show_vendor: section.settings.product_card_show_vendor,
+                show_description: section.settings.product_card_show_description,
+                show_quick_add: section.settings.product_card_show_quick_add,
+                show_quick_view: section.settings.product_card_show_quick_view,
+                show_wishlist: section.settings.product_card_show_wishlist,
+                show_price: section.settings.product_card_show_price,
+                show_badge: section.settings.product_card_show_badge,
+                media_aspect_ratio: section.settings.product_card_aspect_ratio,
+                color_scheme: section.settings.card_color_scheme,
+                placeholder_image: placeholder_image
+              %}
+            {%- endfor -%}
+          </xo-grid>
+        {%- else -%}
+          <div class='filters-content__list'>
+            {%- for product in collection.products -%}
+              {%- assign placeholder_image_index = forloop.index0 | modulo: 4 | plus: 1 -%}
+              {%- assign placeholder_image = 'product-apparel-' | append: placeholder_image_index -%}
+              {% render 'product-card-list',
+                product: product,
+                variant_modal_placement: settings.variant_modal_placement,
+                product_card_media_type: settings.product_card_media_type,
+                show_image: section.settings.product_card_show_image,
+                show_vendor: section.settings.product_card_show_vendor,
+                show_description: section.settings.product_card_show_description,
+                show_quick_add: section.settings.product_card_show_quick_add,
+                show_quick_view: section.settings.product_card_show_quick_view,
+                show_wishlist: section.settings.product_card_show_wishlist,
+                show_price: section.settings.product_card_show_price,
+                show_badge: section.settings.product_card_show_badge,
+                media_aspect_ratio: section.settings.product_card_aspect_ratio,
+                color_scheme: section.settings.card_color_scheme,
+                placeholder_image: placeholder_image
+              -%}
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+  {% endif %}
+</xo-filters-content>

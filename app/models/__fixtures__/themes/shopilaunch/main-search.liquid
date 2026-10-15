@@ -1,0 +1,355 @@
+
+
+<div {% render 'section-attr' %}>
+  <xo-filters-top></xo-filters-top>
+  <xo-filters xo-section-id='{{ section.id }}' xo-money-format='{{ 100 | money }}'>
+    <xo-container {% render 'section-layout' %}>
+      <div class='main-search__header'>
+        <div class='main-search__search'>
+          <h2 class='main-search__title'>{{ 'templates.search.title_page' | t }}</h2>
+          <form action='{{ routes.search_url }}' method='get' role='search' class='search'>
+            {% liquid
+              assign value = search.terms | escape
+              if search.performed
+                assign label = 'templates.search.title' | t
+              else
+                assign label = 'general.search.search' | t
+              endif
+              render 'predictive-search-style2', value: value, label: label
+            %}
+          </form>
+        </div>
+        {%- if search.performed -%}
+          {%- if search.results_count > 0 -%}
+            <p role='status' class='main-search__status'>{{ 'templates.search.results_with_count_and_term' | t: terms: search.terms, count: search.results_count }}</p>
+          {%- endif -%}
+          {%- if search.results_count == 0 and search.filters == empty -%}
+            <p role='status' class='main-search__status'>{{ 'templates.search.no_results' | t: terms: search.terms }}</p>
+          {%- endif -%}
+        {%- endif -%}
+      </div>
+      {%- if search.performed and search.results_count > 0 -%}
+        {% render 'filters-refine' %}
+        {%- case section.settings.search_style -%}
+          {%- when 'sidebar' -%}
+            {% render 'main-search-style1' %}
+          {%- when 'fullwidth' -%}
+            {% render 'main-search-style2' %}
+        {%- endcase -%}
+      {%- endif -%}
+    </xo-container>
+  </xo-filters>
+</div>
+
+<script>
+  const buttonEl = document.querySelectorAll('.xo-facets__button-item');
+  const contentEl = document.querySelectorAll('.filters-content__grid');
+  const triggerToggle = document.querySelector('#main-search-style2__trigger-toggle');
+  const contentToggle = document.querySelector('#main-search-style2__toggle');
+  //group button change layout
+  for (let i = 0; i < buttonEl.length; i++) {
+    buttonEl[i].addEventListener('click', function (e) {
+      let number = Number(buttonEl[i].innerHTML);
+      for (let i = 0; i < contentEl.length; i++) {
+        contentEl[i].style = `--xs: {{ columns_mobile }}; --sm: {{ columns_mobile }}; --md: {{ columns_desktop | minus: 1 }};--lg:${number}`;
+      }
+    });
+  }
+  //toggle sidebar
+  triggerToggle?.addEventListener('click', function (e) {
+    contentToggle.classList.toggle('xo-active');
+    triggerToggle.classList.toggle('xo-active');
+  });
+</script>
+
+{% schema %}
+{
+  "name": "t:sections.main_search.name",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:sections.main_search.settings.width.label",
+      "options": [
+        {
+          "value": "box",
+          "label": "t:sections.main_search.settings.width.option_1.label"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.main_search.settings.width.option_2.label"
+        }
+      ],
+      "default": "box"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_search.settings.search_heading.content"
+    },
+    {
+      "type": "range",
+      "id": "items_per_page",
+      "min": 8,
+      "max": 24,
+      "step": 1,
+      "default": 12,
+      "label": "t:sections.main_search.settings.items_per_page.label"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 3,
+      "label": "t:sections.main_search.settings.columns_desktop.label"
+    },
+    {
+      "type": "select",
+      "id": "search_style",
+      "label": "t:sections.main_search.settings.search_style.label",
+      "options": [
+        {
+          "value": "sidebar",
+          "label": "t:sections.main_search.settings.search_style.option_1.label"
+        },
+        {
+          "value": "fullwidth",
+          "label": "t:sections.main_search.settings.search_style.option_2.label"
+        }
+      ],
+      "default": "sidebar"
+    },
+    {
+      "type": "select",
+      "id": "sidebar",
+      "label": "t:sections.main_search.settings.sidebar.label",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:sections.main_search.settings.sidebar.option_1.label"
+        },
+        {
+          "value": "right",
+          "label": "t:sections.main_search.settings.sidebar.option_2.label"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "filter_style",
+      "label": "t:sections.main_search.settings.filter_style.label",
+      "info": "t:sections.main_search.settings.filter_style.content",
+      "options": [
+        {
+          "value": "toggleSidebar",
+          "label": "t:sections.main_search.settings.filter_style.option_1.label"
+        },
+        {
+          "value": "drawer",
+          "label": "t:sections.main_search.settings.filter_style.option_2.label"
+        },
+        {
+          "value": "dropdown",
+          "label": "t:sections.main_search.settings.filter_style.option_3.label"
+        }
+      ],
+      "default": "drawer"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_search.settings.filt_sort_heading.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "default": true,
+      "label": "t:sections.main_search.settings.enable_filtering.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "default": true,
+      "label": "t:sections.main_search.settings.enable_sorting.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_search.settings.header_mobile.content"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "default": "2",
+      "label": "t:sections.main_search.settings.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:sections.main_search.settings.columns_mobile.options__1.label"
+        },
+        {
+          "value": "2",
+          "label": "t:sections.main_search.settings.columns_mobile.options__2.label"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.product_card_heading.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_image",
+      "default": true,
+      "label": "t:sections.all.product_card_show_image.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_vendor",
+      "default": false,
+      "label": "t:sections.all.product_card_show_vendor.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_description",
+      "label": "t:sections.all.product_card_show_description.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_quick_add",
+      "label": "t:sections.all.product_card_show_quick_add.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_quick_view",
+      "label": "t:sections.all.product_card_show_quick_view.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_wishlist",
+      "label": "t:sections.all.product_card_show_wishlist.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_price",
+      "label": "t:sections.all.product_card_show_price.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "product_card_show_badge",
+      "label": "t:sections.all.product_card_show_badge.label",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "product_card_aspect_ratio",
+      "label": "t:sections.all.product_card_aspect_ratio.label",
+      "default": "3/4"
+    },
+    {
+      "type": "color_scheme",
+      "id": "card_color_scheme",
+      "label": "t:sections.all.card_color_scheme.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.article_card_header.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "article_card_show_image",
+      "default": true,
+      "label": "t:sections.all.article_card_show_image.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "article_card_show_date",
+      "default": true,
+      "label": "t:sections.all.article_card_show_date.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "article_card_show_excerpt",
+      "default": false,
+      "label": "t:sections.all.article_card_show_excerpt.label"
+    },
+    {
+      "type": "color_scheme",
+      "id": "article_card_color_scheme",
+      "default": "scheme_1",
+      "label": "t:sections.all.article_card_color_scheme.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.heading.content"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.color_scheme.label"
+    },
+    {
+      "type": "select",
+      "id": "background_type",
+      "label": "t:sections.all.background_type.label",
+      "options": [
+        {
+          "value": "color",
+          "label": "t:sections.all.background_type.option__1.label"
+        },
+        {
+          "value": "gradient",
+          "label": "t:sections.all.background_type.option__2.label"
+        },
+        {
+          "value": "image",
+          "label": "t:sections.all.background_type.option__3.label"
+        },
+        {
+          "value": "video",
+          "label": "t:sections.all.background_type.option__4.label"
+        }
+      ],
+      "default": "color"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:sections.all.background_color.label",
+      "alpha": true,
+      "visible_if": "{{ section.settings.background_type == 'color' }}"
+    },
+    {
+      "type": "color_background",
+      "id": "background_gradient",
+      "label": "t:sections.all.background_gradient.label",
+      "visible_if": "{{ section.settings.background_type == 'gradient' }}"
+    },
+    {
+      "type": "number",
+      "id": "background_margin",
+      "label": "t:sections.all.background_margin.label",
+      "default": 0
+    },
+    {
+      "type": "number",
+      "id": "padding_top",
+      "label": "t:sections.all.padding_top.label",
+      "default": 50
+    },
+    {
+      "type": "number",
+      "id": "padding_bottom",
+      "label": "t:sections.all.padding_bottom.label",
+      "default": 50
+    }
+  ]
+}
+{% endschema %}

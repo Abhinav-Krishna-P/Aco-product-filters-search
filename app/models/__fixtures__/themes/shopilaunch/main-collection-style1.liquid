@@ -1,0 +1,67 @@
+{% comment %}
+  Renders a main-collection-style1.
+
+  Usage:
+  {% render 'main-collection-style1' %}
+{% endcomment %}
+
+<xo-grid>
+  {%- if section.settings.sidebar == 'left' -%}
+    {%- assign order_column = 0 -%}
+  {%- else -%}
+    {%- assign order_column = -1 -%}
+  {%- endif -%}
+  <div style='--xs: 12; --sm: 12; --md: 4; --lg: 3; overflow:hidden' class='main-collection-style1__sidebar' aria-labelledby='verticalTitle'>
+    {% render 'collection-sidebar',
+      menu_title: section.settings.menu_title,
+      link_list: section.settings.menu_sidebar.links,
+      enable_filtering: section.settings.enable_filtering,
+      show_banner: section.settings.show_banner,
+      banner_link: section.settings.banner_link,
+      banner_image: section.settings.banner_image
+    %}
+  </div>
+  <div style='--xs: 12; --sm: 12; --md: 8; --lg: 9;--order-md:{{ order_column }}'>
+    <div
+      class='main-collection-style1__header'
+    >
+      {% render 'main-collection-mobile' %}
+      {% render 'facets', results: collection, enable_sorting: section.settings.enable_sorting, columns_desktop: section.settings.columns_desktop %}
+    </div>
+    {% if section.settings.show_banner_modern %}
+      <div class='main-collection__banner-modern'>
+        <a
+          href='
+            {%- if section.settings.banner_modern_link != blank -%}
+              {{section.settings.banner_modern_link}} {%- else -%}
+              https://shopify.pxf.io/9gPaY0
+            {%- endif -%}
+          '
+        >
+          {%- if section.settings.banner_modern_image != blank -%}
+            {% render 'image', image: section.settings.banner_modern_image %}
+          {%- else -%}
+            <img src='https://landing.shopilaunch.com/starter/collection_modernbanner.jpg' width='1050' height='420' alt='affiliate' is='xo-lazyload' loading='lazy'>
+          {%- endif -%}
+        </a>
+      </div>
+    {% endif %}
+    {% if section.settings.show_bestsell %}
+      {% render 'collection-bestsell',
+        title: section.settings.bestsell_title,
+        columns: section.settings.columns_bestsell,
+        collection: section.settings.bestsell_collection,
+        show_pagination: section.settings.show_pagination,
+        show_pagination_mobile: section.settings.show_pagination_mobile,
+        products_limit: section.settings.products_bestsell_limit
+      %}
+    {% endif %}
+    {% render 'filters-content',
+      products_per_page: section.settings.products_per_page,
+      product_loadtype: section.settings.product_loadtype,
+      product_layout: section.settings.product_layout,
+      columns_mobile: section.settings.columns_mobile,
+      columns_desktop: section.settings.columns_desktop
+    %}
+  </div>
+</xo-grid>
