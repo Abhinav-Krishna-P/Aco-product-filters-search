@@ -1,0 +1,9 @@
+<div class="collection">
+  {%- paginate collection.products by 12 -%}
+    {% render 'product-grid', products: collection.products, columns: section.settings.columns %}
+    {% render 'pagination', paginate: paginate %}
+  {%- endpaginate -%}
+</div>
+{% schema %}
+{ "name": "Collection", "settings": [ { "type": "range", "id": "columns", "min": 2, "max": 5, "step": 1, "default": 4, "label": "Columns" } ], "presets": [ { "name": "Collection" } ] }
+{% endschema %}

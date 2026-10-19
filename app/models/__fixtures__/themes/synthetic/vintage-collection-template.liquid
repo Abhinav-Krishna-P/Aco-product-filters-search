@@ -1,0 +1,15 @@
+<div class="collection-grid grid--{{ section.settings.grid }}">
+  {% paginate collection.products by 24 %}
+    {% for product in collection.products %}
+      <div class="grid__item">
+        {% include 'product-grid-item', grid_item_width: section.settings.grid %}
+      </div>
+    {% else %}
+      <p>{{ 'collections.general.no_matches' | t }}</p>
+    {% endfor %}
+    {% include 'pagination' %}
+  {% endpaginate %}
+</div>
+{% schema %}
+{ "name": "Collection pages", "settings": [ { "type": "select", "id": "grid", "options": [ { "value": "2", "label": "2" }, { "value": "3", "label": "3" } ], "default": "2", "label": "Products per row" }, { "type": "checkbox", "id": "show_vendor", "label": "Show vendor", "default": false } ] }
+{% endschema %}
